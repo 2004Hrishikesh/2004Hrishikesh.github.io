@@ -150,7 +150,9 @@ export function buildArena(scene, player, projects) {
   for (let x = 8.3; x < 12.2; x += 0.64) person(x, 0.62, -8.6, 0x1e7a3c, 0.95);         // visitors bench
   for (let x = 5.1; x < 7.7; x += 0.64) person(x, 0.66, -8.8, 0x1b1b24, 0.9);           // scorer's table crew
   for (let z = -7; z < 7.2; z += 0.85) if (Math.abs(z) > 1.8) person(14.95 + Math.random() * 0.3, 0.3, z, 0x1b1b24, 0.7); // photographers
-  for (let r = 0; r < 4; r++) for (let x = -10; x < 26; x += 0.6) person(x + (r % 2) * 0.3, 0.6 + r * 0.55, 9.7 + r * 0.9, pick(MIX), 0.13 + Math.random() * 0.1);
+  for (let r = 0; r < 12; r++) for (let x = -10; x < 26; x += 0.62) { // near side: kept shallow so the sideline camera sees over it
+    const p = [x + (r % 2) * 0.3, 0.6 + r * 0.5, 9.7 + r * 0.9]; seats.push(p); person(...p, fan(), r < 3 ? 0.2 + Math.random() * 0.12 : 0.3 + Math.random() * 0.3);
+  }
   const crowd = new THREE.Group(); scene.add(crowd);
   const bodies = new THREE.InstancedMesh(new THREE.BoxGeometry(0.46, 0.58, 0.3), new THREE.MeshBasicMaterial(), people.length);
   const heads = new THREE.InstancedMesh(new THREE.SphereGeometry(0.13, 8, 6), new THREE.MeshBasicMaterial(), people.length);
@@ -204,6 +206,7 @@ export function buildArena(scene, player, projects) {
     swish() { netT = 0; },
     slam() { netT = 0; boardT = 0; },
     flashBurst(n = 10) { flashRate = 14; hype = 1; flashes.slice(0, n).forEach(fire); },
+    showSpots(v) { for (const s of spots) s.g.visible = v; },
     setDone(spot) { spot.done = true; spot.beam.material.color.set(0x3dffa2); spot.beam.material.opacity = 0.05; },
     update(dt, time, activeSpot) {
       ribbonTex.offset.x += dt * 0.035;

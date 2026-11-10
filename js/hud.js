@@ -15,8 +15,6 @@ export const hud = {
   init() {
     $('cardName').textContent = `#${PLAYER.number} ${PLAYER.name}`;
     $('cardRole').textContent = PLAYER.role;
-    $('introName').textContent = PLAYER.name;
-    $('introRole').textContent = PLAYER.role;
     $('tHome').textContent = PLAYER.team; $('tAway').textContent = PLAYER.rival;
     $('tag').textContent = PLAYER.tag || PLAYER.name;
     $('pips').innerHTML = PROJECTS.map(() => '<i></i>').join('');
@@ -29,7 +27,6 @@ export const hud = {
       if (t.dataset.act === 'open') this.showProject(PROJECTS.find((p) => p.id === t.dataset.id), false);
     });
   },
-  showHud() { $('hud').classList.remove('hidden'); $('intro').classList.add('hidden'); },
 
   score(home, away, bump) { $('sHome').textContent = home; $('sAway').textContent = away; if (bump) { $('sHome').classList.remove('bump'); void $('sHome').offsetWidth; $('sHome').classList.add('bump'); } },
   clock(sec) { const s = Math.max(0, Math.ceil(sec)); $('clock').textContent = `${(s / 60) | 0}:${String(s % 60).padStart(2, '0')}`; },

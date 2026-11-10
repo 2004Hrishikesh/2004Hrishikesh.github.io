@@ -20,7 +20,47 @@ export const PLAYER = {
   },
 };
 
-// play: which signature move unlocks the project
+// Everything on the scrolling page that is not a project. Taken from the résumés;
+// `headline` and `bio` were drafted from them — reword freely.
+export const PROFILE = {
+  headline: 'I build machine-learning systems and the software around them.',
+  bio: 'I am a Master\'s student in Computer Science at UMass Amherst. My work centres on computer vision and multimodal learning — I am first author of an IEEE paper on explainable video anomaly detection — and I like building the engineering around a model too: APIs, tests, CI and Docker.',
+  facts: [
+    { k: 'MS Computer Science', v: 'UMass Amherst · 2026 – 2028' },
+    { k: 'B.Tech CSE · CGPA 8.53/10', v: 'VIT Vellore · 2022 – 2026' },
+    { k: 'First-author paper', v: 'IEEE iConSCEPT 2025' },
+  ],
+  experience: [
+    {
+      role: 'Frontend Development Intern', org: 'Utthunga Technologies · AI Center of Excellence',
+      where: 'Bengaluru, India', when: 'Feb 2026 – May 2026',
+      points: [
+        'Built UI features for in-house projects with React, JavaScript, HTML and CSS, working from Figma designs.',
+        'Worked with Node.js services and explored LangChain for LLM-based application features.',
+      ],
+    },
+  ],
+  publication: {
+    title: 'Enhancing Explainable Video Anomaly Detection using Cross-Modal Attention Fusion Mechanism',
+    authors: 'Hrishikesh Muniraju and Sridhar Raj S',
+    venue: '2025 International Conference on Signal Processing, Computation, Electronics, Power and Telecommunication (iConSCEPT), IEEE, 2025',
+    url: 'https://ieeexplore.ieee.org/document/11436826',
+  },
+  education: [
+    { school: 'University of Massachusetts Amherst', degree: 'Master of Science in Computer Science', when: 'Sep 2026 – May 2028 (expected)', note: 'Coursework: Machine Learning, Advanced Algorithms, Secure Distributed Systems' },
+    { school: 'Vellore Institute of Technology', degree: 'Bachelor of Technology in Computer Science and Engineering', when: '2022 – 2026', note: 'CGPA 8.53/10' },
+  ],
+  skills: [
+    { k: 'Languages', v: ['Python', 'JavaScript', 'C++', 'HTML', 'CSS', 'SQL'] },
+    { k: 'ML & data', v: ['PyTorch', 'Hugging Face Transformers', 'scikit-learn', 'OpenCV', 'pandas', 'NumPy', 'CLIP', 'BLIP', 'YOLO'] },
+    { k: 'Web & APIs', v: ['React', 'Node.js', 'Flask', 'FastAPI', 'Pydantic', 'Plotly Dash', 'SQLite'] },
+    { k: 'Tooling', v: ['Git', 'Docker', 'GitHub Actions', 'pytest', 'Linux', 'CUDA', 'LangChain', 'Figma'] },
+  ],
+};
+
+// highlight: the move the player performs in the background when someone hovers the project
+//   'windmill' | 'spin360' | 'reverse' | 'halfcourt' | 'stepback' | 'fade'
+// play: which signature move unlocks the project in the optional game
 //   'dunk'     – poster dunk in the paint
 //   'corner'   – catch-and-shoot corner three
 //   'logo'     – deep three from the logo
@@ -30,7 +70,7 @@ export const PLAYER = {
 // demo / demoLabel: the gold button (a live demo, a paper, anything). repo: the GitHub button.
 export const PROJECTS = [
   {
-    id: 'p1', play: 'dunk', playName: 'POSTER DUNK', call: 'POSTERIZED!',
+    id: 'p1', highlight: 'windmill', when: 'Aug 2025 – Apr 2026', play: 'dunk', playName: 'POSTER DUNK', call: 'POSTERIZED!',
     spot: [9.6, 0], color: '#ff4d5a',
     title: 'Ex-VAD — Explainable Video Anomaly Detection',
     tagline: 'Cross-modal attention that fuses video features with generated captions to flag anomalies and explain them. First-author paper at IEEE iConSCEPT 2025.',
@@ -46,7 +86,7 @@ export const PROJECTS = [
     repo: 'https://github.com/2004Hrishikesh/Ex-VAD',
   },
   {
-    id: 'p2', play: 'corner', playName: 'CORNER THREE', call: 'BANG!',
+    id: 'p2', highlight: 'spin360', when: 'Jun 2025', play: 'corner', playName: 'CORNER THREE', call: 'BANG!',
     spot: [12.2, -7.0], color: '#35c8ff',
     title: 'Thermal-Image Human Detection',
     tagline: 'Dataset pipeline for a YOLO person detector on thermal images that still work in darkness and smoke. Team project at the National University of Singapore.',
@@ -60,7 +100,7 @@ export const PROJECTS = [
     demo: '#', repo: 'https://github.com/2004Hrishikesh/thermal-human-detection',
   },
   {
-    id: 'p3', play: 'logo', playName: 'LOGO THREE', call: 'FROM THE LOGO!',
+    id: 'p3', highlight: 'halfcourt', when: 'Jul 2025', play: 'logo', playName: 'LOGO THREE', call: 'FROM THE LOGO!',
     spot: [3.4, 0], color: '#ffc531',
     title: 'Offline Legal Document Summarizer',
     tagline: 'A web app that summarises terms of service entirely offline — paste text, upload a PDF or DOCX, or give it a URL.',
@@ -75,7 +115,7 @@ export const PROJECTS = [
     demo: '#', repo: 'https://github.com/2004Hrishikesh/terms-summarizer',
   },
   {
-    id: 'p4', play: 'fade', playName: 'FADEAWAY', call: 'CASH!',
+    id: 'p4', highlight: 'reverse', when: 'Sep 2025 – Nov 2025', play: 'fade', playName: 'FADEAWAY', call: 'CASH!',
     spot: [8.4, 2.9], color: '#b07bff',
     title: 'Vehicle Emissions Data Pipeline & Dashboard',
     tagline: 'A data-cleaning pipeline for three vehicle datasets, with an interactive dashboard that shows what was cleaned and why.',
@@ -89,7 +129,7 @@ export const PROJECTS = [
     demo: '#', repo: 'https://github.com/2004Hrishikesh/automotive-emissions-management',
   },
   {
-    id: 'p5', play: 'stepback', playName: 'STEP-BACK THREE', call: 'SPLASH!',
+    id: 'p5', highlight: 'stepback', when: 'Fall 2026 – Present', play: 'stepback', playName: 'STEP-BACK THREE', call: 'SPLASH!',
     spot: [7.0, 5.3], color: '#3dffa2',
     title: 'UMass Dining Meal Planner',
     tagline: 'A daily pipeline that reads the UMass dining menu and emails a meal plan built around a protein target every morning.',

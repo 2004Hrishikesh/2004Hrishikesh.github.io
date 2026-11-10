@@ -16,15 +16,28 @@
     } }
   </script>
 </head>
-<body>
+<body data-mode="page">
   <canvas id="game"></canvas>
+  <div id="shade"></div>
 
-  <div id="hud" class="hidden">
+  <!-- recruiter-facing page (content is rendered from js/projects.js) -->
+  <header id="nav">
+    <a class="brand" href="#about"><b id="brandNo"></b><span id="brandName"></span></a>
+    <nav id="navLinks"></nav>
+    <button id="btnPlay">Play the game ▶</button>
+  </header>
+  <main id="page"></main>
+  <div id="caption"></div>
+  <noscript><p style="padding:24px;color:#fff">This portfolio needs JavaScript. My work is also at github.com/2004Hrishikesh.</p></noscript>
+
+  <!-- optional game -->
+  <div id="hud">
     <div id="card">
       <div class="ovr"><b>99</b><span>OVR</span></div>
       <div class="who"><div id="cardName"></div><div id="cardRole"></div></div>
     </div>
     <div id="topbtns">
+      <button id="btnExit" title="Back to the portfolio (Esc)">← PORTFOLIO</button>
       <button id="btnList" title="All projects (Tab)">☰ PROJECTS</button>
       <button id="btnMute" title="Mute (M)">SOUND ON</button>
     </div>
@@ -50,10 +63,9 @@
 
   <div id="intro">
     <div class="introBox">
-      <div class="kicker">TONIGHT · LIVE FROM PORTFOLIO ARENA</div>
-      <h1 id="introName"></h1>
-      <div class="sub" id="introRole"></div>
-      <p>Every project is locked behind a signature play. Step on a glowing spot, hold to fill the meter, and release on <em>green</em>.</p>
+      <div class="kicker">OPTIONAL · THE PLAYABLE VERSION</div>
+      <h1>Take the shots yourself</h1>
+      <p>Every project is tied to a signature play. Step on a glowing spot, hold to fill the meter, and release on <em>green</em>.</p>
       <div class="keys">
         <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</div>
         <div><kbd>SHIFT</kbd> sprint · drive at the rim for a windmill</div>
@@ -61,7 +73,7 @@
       </div>
       <div class="cta">
         <button id="btnStart" class="primary">TIP OFF ▶</button>
-        <button id="btnSkip">Skip the game — just show projects</button>
+        <button id="btnSkip">← Back to the portfolio</button>
       </div>
     </div>
   </div>

@@ -133,7 +133,7 @@ export function poseShoot(b, p, released, fade) {
   if (fade) { T.hipR = -0.7; T.knR = 0.9; }
 }
 
-export function poseDunk(b, k, windmill) {
+export function poseDunk(b, k, windmill, reverse) {
   const T = b.T, slam = k > 0.8;
   T.bodyY = STAND_Y; T.lean = slam ? 0.3 : -0.12; T.tilt = slam ? 0.12 : -0.1;
   T.shRx = slam ? -2.45 : -3.55; T.shRz = -0.1; T.elR = slam ? -0.05 : -0.55;
@@ -142,6 +142,7 @@ export function poseDunk(b, k, windmill) {
     if (slam) { if (sh.x > 1) sh.x -= Math.PI * 2; }
     else { T.shRx = lerp(0.5, 3.83, smooth(0.08, 0.8, k)); T.elR = -0.1; }
   }
+  if (reverse && slam) { T.shRx = -3.65; T.elR = -0.1; T.lean = -0.18; T.tilt = -0.22; } // over the head, back to the rim
   T.shLx = -0.5; T.shLz = 1.0; T.elL = -0.4;
   T.hipL = -1.1; T.knL = 1.6; T.hipR = -0.35; T.knR = 1.2;
 }

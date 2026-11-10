@@ -134,3 +134,81 @@ button { font-family: var(--disp); cursor: pointer; }
 .jm-list button:hover { background: rgba(255,255,255,.11); }
 .jm-list small { display: block; font-size: 12px; letter-spacing: 2px; font-weight: 800; color: var(--accent); }
 .jm-list strong { display: block; font-size: 21px; font-weight: 800; line-height: 1.1; margin: 3px 0; } .jm-list em { font-style: normal; font-size: 13px; letter-spacing: 1px; opacity: .7; }
+
+/* ═════════ recruiter-facing page (mode: page) ═════════ */
+html { scroll-behavior: smooth; }
+html, body { height: auto; min-height: 100%; overflow: visible; }
+html { overflow-x: hidden; overflow-y: auto; }
+html:has(body:not([data-mode="page"])), body:not([data-mode="page"]) { overflow: hidden; height: 100%; }
+body:not([data-mode="page"]) :is(#nav, #page, #shade, #caption) { display: none; }
+body:not([data-mode="play"]) #hud { display: none; }
+body:not([data-mode="intro"]) #intro { display: none; }
+
+#shade { position: fixed; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, rgba(8,6,18,.97) 0%, rgba(8,6,18,.94) 34%, rgba(8,6,18,.6) 52%, rgba(8,6,18,0) 70%),
+              linear-gradient(180deg, rgba(8,6,18,.55) 0, rgba(8,6,18,0) 120px); }
+
+#nav { position: fixed; top: 0; left: 0; right: 0; z-index: 10; height: 56px; display: flex; align-items: center; gap: 28px; padding: 0 clamp(16px, 4vw, 48px);
+  background: rgba(8,6,18,.82); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,.1); font-family: var(--disp); }
+#nav .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 800; font-size: 19px; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+#nav .brand b { background: var(--gold); color: #111; padding: 1px 8px; font-weight: 900; }
+#navLinks { display: flex; gap: 4px; margin-left: auto; }
+#navLinks a { color: var(--ink); opacity: .7; text-decoration: none; font-weight: 700; font-size: 16px; letter-spacing: 1.5px; text-transform: uppercase; padding: 17px 12px 15px; border-bottom: 3px solid transparent; }
+#navLinks a i { font-style: normal; font-size: 11px; color: var(--gold); margin-right: 6px; letter-spacing: 1px; }
+#navLinks a:hover { opacity: 1; } #navLinks a.on { opacity: 1; border-bottom-color: var(--gold); }
+#btnPlay { flex: none; background: none; border: 1px solid rgba(255,255,255,.35); color: var(--ink); font-size: 15px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; padding: 7px 14px; white-space: nowrap; }
+#btnPlay:hover { border-color: var(--gold); color: var(--gold); }
+
+#page { position: relative; width: min(620px, 50vw); margin-left: clamp(20px, 6vw, 96px); padding-bottom: 12vh; font-size: 17px; line-height: 1.6; }
+#page section { padding: 110px 0 40px; scroll-margin-top: 0; }
+#page #about { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding-top: 80px; }
+#page #contact { min-height: 82vh; display: flex; flex-direction: column; justify-content: center; }
+#page .kicker { display: flex; align-items: center; gap: 10px; font-family: var(--disp); font-size: 14px; font-weight: 800; letter-spacing: 3px; margin-bottom: 14px; }
+#page .kicker b { background: var(--gold); color: #111; padding: 1px 8px; } #page .kicker span { color: var(--gold); text-transform: uppercase; }
+#page h1 { font-family: var(--disp); font-weight: 900; font-size: clamp(46px, 6.2vw, 92px); line-height: .95; margin: 0 0 18px; text-transform: uppercase; letter-spacing: .5px; }
+#page h2 { font-family: var(--disp); font-weight: 800; font-size: 34px; text-transform: uppercase; letter-spacing: 1px; margin: 34px 0 12px; line-height: 1; }
+#page section > h2:first-of-type { margin-top: 0; font-size: 46px; } #page h2.big { font-size: clamp(54px, 7vw, 96px); font-weight: 900; }
+#page p { margin: 0 0 14px; color: rgba(246,242,232,.86); } #page .lead { font-size: 22px; line-height: 1.4; color: var(--ink); font-weight: 500; }
+#page .hint { font-size: 15px; color: var(--gold); } .touch { display: none; }
+#page .row { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0 0; } #page .row:empty { display: none; }
+.btn { font-family: var(--disp); font-weight: 800; font-size: 16px; letter-spacing: 1.5px; text-transform: uppercase; text-decoration: none; padding: 8px 16px;
+  color: var(--ink); border: 1.5px solid rgba(255,255,255,.45); background: rgba(8,6,18,.4); transition: border-color .15s, color .15s; }
+.btn:hover { border-color: var(--gold); color: var(--gold); } .btn.solid { background: var(--gold); border-color: var(--gold); color: #111; } .btn.solid:hover { color: #111; filter: brightness(1.08); }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 34px 0 0; }
+.facts div { border-top: 2px solid var(--gold); padding-top: 8px; } .facts dt { font-family: var(--disp); font-weight: 800; font-size: 17px; letter-spacing: .5px; line-height: 1.15; }
+.facts dd { margin: 3px 0 0; font-size: 14px; opacity: .75; }
+
+.card { background: rgba(16,12,34,.86); border: 1px solid rgba(255,255,255,.1); border-left: 4px solid var(--accent); padding: 18px 20px; margin: 14px 0; outline: none; transition: border-color .2s, background .2s, transform .2s; }
+.card:hover, .card:focus-visible, .card.playing { background: rgba(22,16,46,.95); border-color: var(--accent); transform: translateX(4px); }
+.card header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+.card .no { font-family: var(--disp); font-weight: 900; font-size: 30px; line-height: 1; color: var(--accent); }
+.card h3 { font-family: var(--disp); font-weight: 800; font-size: 25px; line-height: 1.08; margin: 0; } .card small { font-size: 13px; opacity: .65; letter-spacing: .5px; }
+.card header > div { flex: 1; }
+.playbtn { flex: none; background: none; border: 1px solid var(--accent); color: var(--accent); font-size: 13px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: 4px 9px; white-space: nowrap; }
+.playbtn:hover, .card.playing .playbtn { background: var(--accent); color: #111; }
+.card p { font-size: 16px; } .card .stats { margin: 12px 0; } .card .stats b { font-size: 24px; }
+.card details { margin-top: 12px; } .card summary { cursor: pointer; font-family: var(--disp); font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; font-size: 14px; color: var(--gold); }
+.card ul, .entry ul { margin: 10px 0 0; padding-left: 18px; font-size: 15.5px; } .card li, .entry li { margin-bottom: 6px; color: rgba(246,242,232,.86); }
+.entry { border-left: 2px solid rgba(255,255,255,.18); padding: 2px 0 2px 18px; margin: 0 0 18px; }
+.entry h3 { font-family: var(--disp); font-weight: 800; font-size: 23px; line-height: 1.12; margin: 0 0 3px; } .entry .meta { font-size: 14.5px; color: var(--gold); margin-bottom: 6px; } .entry p { font-size: 15.5px; margin: 0; }
+.skills { display: grid; gap: 14px; } .skills h4 { font-family: var(--disp); font-size: 14px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); margin: 0 0 6px; }
+#page .foot { margin-top: 44px; font-size: 14px; opacity: .8; } .linkbtn { background: none; border: 0; padding: 0; color: var(--gold); font: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
+#caption { position: fixed; right: 22px; bottom: 20px; z-index: 6; font-family: var(--disp); font-weight: 800; font-size: 16px; letter-spacing: 1.5px; text-transform: uppercase;
+  background: rgba(8,6,18,.88); border-left: 4px solid var(--gold); padding: 7px 14px; opacity: 0; transform: translateY(8px); transition: opacity .25s, transform .25s; pointer-events: none; max-width: 38vw; }
+#caption.on { opacity: 1; transform: none; }
+#intro h1 { font-size: clamp(40px, 7vw, 84px); text-transform: uppercase; }
+
+@media (max-width: 1180px) { #nav { gap: 14px; } #brandName { display: none; } #navLinks a { padding-inline: 8px; font-size: 15px; } }
+@media (pointer: coarse) { .mouse { display: none; } .touch { display: inline; } }
+@media (max-width: 860px) {
+  /* phone: the court is pinned to the top, the page scrolls underneath it */
+  body[data-mode="page"] #game { height: 40vh; z-index: 4; }
+  #shade { display: none; }
+  #nav { height: 46px; gap: 10px; background: rgba(8,6,18,.72); } #navLinks { display: none; } #nav .brand { font-size: 15px; } #btnPlay { margin-left: auto; font-size: 12px; padding: 5px 9px; }
+  #page { width: auto; margin: 0; padding: 40vh 18px 60px; background: #0b0718; font-size: 16px; }
+  #page section { padding: 34px 0 14px; scroll-margin-top: 40vh; } #page #about, #page #contact { min-height: 0; display: block; padding-top: 30px; }
+  .facts { grid-template-columns: 1fr; } .card header { flex-wrap: wrap; } .card h3 { font-size: 22px; }
+  #caption { top: calc(40vh - 40px); bottom: auto; right: 10px; z-index: 5; font-size: 12px; max-width: 80vw; padding: 5px 10px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .card { transition: none; } }

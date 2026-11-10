@@ -4,10 +4,12 @@ import { makeBaller, poseMove, poseShoot, poseDunk, poseHang, poseDefend, poseDo
 import { PROJECTS, PLAYER } from './projects.js';
 import { sfx } from './audio.js';
 import { hud } from './hud.js';
+import { page } from './page.js';
 
 const G = 9.8, BALL_R = 0.12;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 const lerp = (a, b, k) => a + (b - a) * k;
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const dampAngle = (a, b, k) => { const d = (((b - a + Math.PI) % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) - Math.PI; return a + d * k; };
 // vertical jump profile driven by meter progress: leaves floor at .25, peaks at .825 (the green zone), lands at 1.4
 const jumpY = (p) => 0.72 * Math.sin(Math.PI * clamp((p - 0.25) / 1.15, 0, 1));
@@ -20,11 +22,11 @@ renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadow
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, 1, 0.5, 120);
-function resize() {
-  const w = window.innerWidth, h = window.innerHeight;
+function resize() { // the canvas is full-window on desktop and a pinned band on phones
+  const w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
   renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
 }
-window.addEventListener('resize', resize); resize();
+window.addEventListener('resize', resize); new ResizeObserver(resize).observe(canvas); resize();
 
 const arena = buildArena(scene, PLAYER, PROJECTS);
 
@@ -74,7 +76,7 @@ const B = { state: 'held', vel: new THREE.Vector3(), S: new THREE.Vector3(), E: 
 // ───────── game state ─────────
 const dunkSpot = arena.spots.find((s) => s.proj.play === 'dunk');
 const S = {
-  mode: 'intro', time: 0, clock: 120, home: 98, away: 99, missStreak: 0,
+  mode: 'page', section: 'about', time: 0, clock: 120, home: 98, away: 99, missStreak: 0,
   action: 'free', p: 0, shot: null, hasBall: true, t: 0, vy: 0, from: new THREE.Vector3(), to: new THREE.Vector3(),
   meterHold: 0, meterState: '', vx: 0, vz: 0, ts: 1, dph: 0, cheer: 0, shake: 0, zoom: 0, activeSpot: null, finale: false, tasks: [],
 };
@@ -87,11 +89,13 @@ const after = (sec, fn) => S.tasks.push({ at: S.time + sec, fn });
 const keys = new Set(), joy = { x: 0, y: 0 };
 const MOVE = { KeyW: [0, -1], ArrowUp: [0, -1], KeyS: [0, 1], ArrowDown: [0, 1], KeyA: [-1, 0], ArrowLeft: [-1, 0], KeyD: [1, 0], ArrowRight: [1, 0] };
 window.addEventListener('keydown', (e) => {
-  if (S.mode === 'intro') { if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); start(); } return; }
+  if (S.mode === 'page') return;
+  if (S.mode === 'intro') { if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); start(); } else if (e.code === 'Escape') exitGame(); return; }
   if (S.mode === 'modal') { if (e.code === 'Escape' || e.code === 'Enter') { e.preventDefault(); hud.close(); } return; }
   if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) shootDown(); }
   else if (e.code === 'Tab') { e.preventDefault(); openList(); }
   else if (e.code === 'KeyM') mute();
+  else if (e.code === 'Escape') { exitGame(); return; }
   else if (MOVE[e.code]) e.preventDefault();
   keys.add(e.code);
 });
@@ -100,7 +104,8 @@ window.addEventListener('blur', () => { keys.clear(); shootUp(); });
 
 const $ = (id) => document.getElementById(id);
 $('btnStart').onclick = () => start();
-$('btnSkip').onclick = () => { start(); openList(); };
+$('btnSkip').onclick = () => exitGame();
+$('btnExit').onclick = () => exitGame();
 $('btnList').onclick = () => openList();
 $('btnMute').onclick = () => mute();
 function mute() { $('btnMute').textContent = sfx.toggle() ? 'SOUND OFF' : 'SOUND ON'; }
@@ -116,7 +121,10 @@ function mute() { $('btnMute').textContent = sfx.toggle() ? 'SOUND OFF' : 'SOUND
   sb.addEventListener('pointerup', shootUp); sb.addEventListener('pointercancel', shootUp);
 }
 
-function start() { if (S.mode !== 'intro') return; sfx.init(); sfx.buzzer(); hud.showHud(); S.mode = 'play'; }
+function setMode(m) { S.mode = m; document.body.dataset.mode = m; arena.showSpots(m !== 'page'); resize(); }
+function start() { if (S.mode !== 'intro') return; sfx.init(); sfx.buzzer(); setMode('play'); }
+function enterGame() { if (S.mode !== 'page') return; D.step = 'idle'; D.id = null; page.caption(''); page.playing(null); resetScene(4.5, 3); window.scrollTo(0, 0); setMode('intro'); }
+function exitGame() { if (S.mode === 'page') return; keys.clear(); joy.x = joy.y = 0; resetScene(HOME[0], HOME[1]); setMode('page'); }
 function openList() { if (S.mode !== 'play') return; sfx.ui(); S.mode = 'modal'; hud.showList(); }
 hud.onClose = () => {
   S.mode = 'play'; keys.clear();
@@ -131,22 +139,24 @@ hud.onClose = () => {
 const distHoop = (x, z) => Math.hypot(HOOP.x - x, HOOP.z - z);
 const isThree = (x, z) => distHoop(x, z) > COURT.R3 || Math.abs(z) > COURT.corner;
 const spotAt = (x, z) => arena.spots.find((s) => Math.hypot(s.x - x, s.z - z) < 0.95);
-const sprinting = () => keys.has('ShiftLeft') || keys.has('ShiftRight') || Math.hypot(joy.x, joy.y) > 0.92;
+const sprinting = () => (S.mode === 'page' ? D.sprint : keys.has('ShiftLeft') || keys.has('ShiftRight') || Math.hypot(joy.x, joy.y) > 0.92);
 // a full-speed drive can take off from further out
 const inDunkRange = () => distHoop(me.x, me.z) < (Math.hypot(S.vx, S.vz) > 6.2 ? 5.2 : 3.7) && me.x < HOOP.x + 0.2;
 const greenHalf = () => Math.min(0.15, 0.07 + 0.022 * S.missStreak);
 
-function shootDown() {
-  if (S.mode !== 'play' || S.action !== 'free' || !S.hasBall) return;
+function shootDown(force) { // force: a highlight definition from HL (page mode only)
+  if ((S.mode !== 'play' && !force) || S.action !== 'free' || !S.hasBall) return;
   const spot = spotAt(me.x, me.z);
   let type = 'jumper', sp = null;
   if (inDunkRange()) { type = 'dunk'; sp = dunkSpot; }
   else if (spot && spot.proj.play !== 'dunk') { type = spot.proj.play; sp = spot; }
+  if (force) { type = force.drive ? 'dunk' : force.type; sp = null; }
   let near = 99; for (const d of defenders) if (!d.down) near = Math.min(near, Math.hypot(d.x - me.x, d.z - me.z));
   const space = type === 'stepback' || type === 'fade';   // these moves create their own room
   const cover = type === 'dunk' ? '' : near < 1.7 && !space ? 'CONTESTED' : near > 3 ? 'WIDE OPEN' : 'OPEN';
   const w = greenHalf() * (cover === 'CONTESTED' ? 0.8 : cover === 'WIDE OPEN' ? 1.25 : 1);
-  S.shot = { type, spot: sp, cover, windmill: type === 'dunk' && distHoop(me.x, me.z) > 3.4,
+  S.shot = { type, spot: sp, cover, demo: !!force, spin: !!(force && force.spin), reverse: !!(force && force.reverse),
+    windmill: force ? !!force.windmill : type === 'dunk' && distHoop(me.x, me.z) > 3.4,
     dur: type === 'dunk' ? 0.5 : 0.95, gs: type === 'dunk' ? 0.4 : 0.825 - w, ge: type === 'dunk' ? 1 : 0.825 + w };
   if (type !== 'dunk') S.vx = S.vz = 0;
   S.action = 'charging'; S.p = 0; S.meterState = ''; S.meterHold = 0;
@@ -159,7 +169,7 @@ function release() {
     sh.make = p >= sh.gs;
     S.meterState = sh.make ? 'green' : 'miss'; S.meterHold = 0.5;
     S.action = 'dunking'; S.t = 0;
-    S.from.set(me.x, 0, me.z); S.to.set(HOOP.x - 0.3, 0, HOOP.z - 0.29);
+    S.from.set(me.x, 0, me.z); S.to.set(HOOP.x - 0.3, 0, HOOP.z + (sh.reverse ? 0.29 : -0.29)); sh.yaw0 = me.yaw;
     sh.flight = 0.5 + S.from.distanceTo(S.to) * 0.07; S.vx = S.vz = 0;
     sfx.squeak();
     return;
@@ -169,7 +179,8 @@ function release() {
   if (Math.abs(err) <= w) { grade = 'EXCELLENT'; make = true; }
   else if (Math.abs(err) <= w + 0.09) { grade = err < 0 ? 'SLIGHTLY EARLY' : 'SLIGHTLY LATE'; make = Math.random() < 0.4; }
   else { grade = err < 0 ? 'EARLY' : 'LATE'; make = false; }
-  hud.feedback(`${grade} · ${sh.cover}`, grade === 'EXCELLENT' ? 'green' : make ? 'warn' : 'bad');
+  if (sh.demo) { grade = 'EXCELLENT'; make = true; }
+  else hud.feedback(`${grade} · ${sh.cover}`, grade === 'EXCELLENT' ? 'green' : make ? 'warn' : 'bad');
   ball.material.emissive.setHex(grade === 'EXCELLENT' ? 0x18e070 : 0x000000);
   S.meterState = grade === 'EXCELLENT' ? 'green' : 'miss'; S.meterHold = 0.6;
   sh.make = make; sh.three = isThree(me.x, me.z);
@@ -187,6 +198,7 @@ function release() {
 }
 
 function scored(sh, kind) {
+  if (sh.demo) { S.cheer = 1.8; arena.flashBurst(10); after(1.2, giveBall); return; } // highlight reel: no score, no unlocks
   const pts = kind === 'dunk' ? 2 : sh.three ? 3 : 2;
   S.home += pts; S.missStreak = 0; S.cheer = 1.8; hud.score(S.home, S.away, true);
   const sp = sh.spot, fresh = sp && !unlocked.has(sp.proj.id);
@@ -209,6 +221,7 @@ let lastDir = [0, 0], squeakAt = 0, bounceWas = 0;
 function updatePlayer(dt) {
   let ix = joy.x, iz = joy.y;
   for (const k of keys) if (MOVE[k]) { ix += MOVE[k][0]; iz += MOVE[k][1]; }
+  if (S.mode === 'page') { ix = D.ix; iz = D.iz; }
   let mag = Math.hypot(ix, iz); if (mag > 1) { ix /= mag; iz /= mag; mag = 1; }
   const toHoop = Math.atan2(HOOP.x - me.x, HOOP.z - me.z);
   const hx = Math.sin(toHoop), hz = Math.cos(toHoop);
@@ -223,7 +236,7 @@ function updatePlayer(dt) {
       me.yaw = dampAngle(me.yaw, Math.atan2(ix, iz), turn);
       if (ix * lastDir[0] + iz * lastDir[1] < 0.2 && S.time > squeakAt) { sfx.squeak(); squeakAt = S.time + 0.25; }
       lastDir = [ix / mag, iz / mag];
-    } else lastDir = [0, 0];
+    } else { lastDir = [0, 0]; if (S.mode === 'page') me.yaw = dampAngle(me.yaw, -Math.PI / 2, 1 - Math.exp(-dt * 3)); } // idle: face the viewer
     for (const d of bodies) { // don't run through other players
       const dx = me.x - d.x, dz = me.z - d.z, dd = Math.hypot(dx, dz);
       if (dd < 0.8 && dd > 0.001 && !d.down) { me.x = d.x + dx / dd * 0.8; me.z = d.z + dz / dd * 0.8; }
@@ -261,8 +274,10 @@ function updatePlayer(dt) {
     const sh = S.shot; S.t += dt; const k = Math.min(1, S.t / sh.flight), e = 1 - (1 - k) * (1 - k);
     me.x = lerp(S.from.x, S.to.x, k); me.z = lerp(S.from.z, S.to.z, k);
     me.y = 0.86 * e + (sh.windmill ? 1.05 : 0.8) * Math.sin(Math.PI * k);
-    me.yaw = dampAngle(me.yaw, Math.PI / 2, turn);
-    poseDunk(me, k, sh.windmill); S.zoom = 1;
+    if (sh.spin) me.yaw = lerp(sh.yaw0, Math.PI / 2, k) + Math.PI * 2 * smooth(0.08, 0.88, k);          // full 360 in the air
+    else if (sh.reverse) me.yaw = dampAngle(me.yaw, k > 0.28 ? -Math.PI / 2 : Math.PI / 2, 1 - Math.exp(-dt * 9)); // turn the back to the rim
+    else me.yaw = dampAngle(me.yaw, Math.PI / 2, turn);
+    poseDunk(me, k, sh.windmill, sh.reverse); S.zoom = 1;
     me.handPos('R', v1); v1.y += 0.1; ball.position.lerp(v1, 1 - Math.exp(-dt * 45));
     if (k > 0.45) for (const d of defenders) if (!d.down && Math.hypot(d.x - me.x, d.z - me.z) < 1.35) knockDown(d); // anyone in the lane gets posterized
     if (k >= 1) {
@@ -273,10 +288,10 @@ function updatePlayer(dt) {
       else { ball.position.set(HOOP.x - 0.2, HOOP.y + 0.2, HOOP.z); B.vel.set(-3.5, 4.5, (Math.random() - 0.5) * 3); sfx.rim(); hud.feedback('RIM STUFFED — HOLD LONGER', 'bad'); missed(); }
     }
   } else if (S.action === 'hang') {
-    S.t += dt; poseHang(me, S.time); S.zoom = 1;
+    S.t += dt; poseHang(me, S.time); if (S.shot.reverse) me.T.shRx = -3.6; S.zoom = 1;
     if (S.t > 0.55) { S.action = 'fall'; S.vy = 0; }
   } else if (S.action === 'fall') {
-    S.vy -= G * dt; me.y += S.vy * dt; me.x -= 1.4 * dt; me.crouch(0.3); me.T.shRx = -1.2; me.T.elR = -0.4; me.T.tilt = 0; me.T.lean = 0.1;
+    S.vy -= G * dt; me.y += S.vy * dt; me.x -= 1.4 * dt; me.yaw = dampAngle(me.yaw, Math.PI / 2, turn); me.crouch(0.3); me.T.shRx = -1.2; me.T.elR = -0.4; me.T.tilt = 0; me.T.lean = 0.1;
     if (me.y <= 0) { me.y = 0; S.action = 'free'; S.vx = S.vz = 0; sfx.bounce(0.9); }
   }
   me.apply(dt);
@@ -294,7 +309,7 @@ function updateDefenders(dt) {
   const dh = distHoop(me.x, me.z);
   const goals = [
     [center, HOOP.x - hx * Math.min(1.6, dh * 0.5), HOOP.z - hz * Math.min(1.6, dh * 0.5), 2.6, dh < 6 || S.action === 'dunking'],
-    [shadow, me.x + hx * 1.3, me.z + hz * 1.3, 3.6, shooting],
+    shadow.hold ? [shadow, shadow.hold[0], shadow.hold[1], 3.6, true] : [shadow, me.x + hx * 1.3, me.z + hz * 1.3, 3.6, shooting],
     ...guards.map((g) => [g, g.gx + Math.sin(S.time * 0.8 + g.seed) * 0.3, g.gz + Math.cos(S.time * 0.6 + g.seed) * 0.2, 1.6, false]),
   ];
   for (const [d, gx, gz, sp, up] of goals) {
@@ -354,18 +369,86 @@ function updateBall(dt) {
   ball.rotation.x += dt * 6; ball.rotation.z += dt * 3;
 }
 
-const camPos = new THREE.Vector3(7.4, 8.6, 22), camLook = new THREE.Vector3(7.4, 1.7, -0.4);
+const camPos = new THREE.Vector3(-10.5, 8.6, 0), camLook = new THREE.Vector3(8, 1.4, 0), camT = { p: new THREE.Vector3(), l: new THREE.Vector3() };
+let viewShift = 0;
 function updateCamera(dt) {
-  const wide = camera.aspect < 1.5 ? clamp(30 * 1.5 / camera.aspect, 30, 62) : 30;
+  const wide = camera.aspect < 1.5 ? clamp(1.5 / camera.aspect, 1, 2.05) : 1;
   const z = S.zoom; S.zoom = Math.max(0, S.zoom - dt * 1.2);
-  const cx = lerp(7.4 + (me.x - 7.4) * 0.28, HOOP.x - 2.5, z * 0.6);
-  const k = 1 - Math.exp(-dt * 3.5);
-  camPos.x += (cx - camPos.x) * k; camLook.x += (cx - camLook.x) * k;
-  camLook.y += (lerp(1.7, 2.3, z) - camLook.y) * k;
-  camera.fov += (lerp(wide, wide * 0.78, z) - camera.fov) * k; camera.updateProjectionMatrix();
+  let fov = 30, rate = 3.5;
+  if (S.mode === 'page') { // behind-the-ball angle; each section of the page gets its own shot
+    rate = 2.2;
+    if (S.section === 'experience') { camT.p.set(-1.5, 6.5, 16); camT.l.set(8.5, 1.6, 0); }
+    else if (S.section === 'contact') { camT.p.set(1.5, 3.4, 9.3); camT.l.set(HOOP.x - 2, 2.3, 0); fov = 34; }
+    else if (S.section === 'about') { camT.p.set(-10.5, 8.6, Math.sin(S.time * 0.12) * 2.5); camT.l.set(8, 1.4, 0); }
+    else { camT.p.set(Math.min(-8, me.x - 11.5), 6.8, me.z * 0.25); camT.l.set(lerp(8.5, HOOP.x - 1, z * 0.7), lerp(1.6, 2.4, z), me.z * 0.2); }
+  } else { // the game keeps the sideline broadcast angle
+    const cx = lerp(7.4 + (me.x - 7.4) * 0.28, HOOP.x - 2.5, z * 0.6);
+    camT.p.set(cx, 8.6, 22); camT.l.set(cx, lerp(1.7, 2.3, z), -0.4);
+  }
+  const k = 1 - Math.exp(-dt * rate);
+  camPos.lerp(camT.p, k); camLook.lerp(camT.l, k);
+  camera.fov += (fov * wide * lerp(1, 0.8, z) - camera.fov) * k;
+  // on wide screens the text sits on the left, so slide the whole picture to the right
+  const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1;
+  viewShift += ((S.mode === 'page' && window.innerWidth > 860 ? 0.2 : 0) - viewShift) * k;
+  camera.setViewOffset(w, h, -viewShift * w, 0, w, h);
   S.shake *= Math.exp(-dt * 7);
   camera.position.set(camPos.x + (Math.random() - 0.5) * S.shake, camPos.y + (Math.random() - 0.5) * S.shake, camPos.z);
   camera.lookAt(camLook);
+}
+
+// ───────── highlight reel: what plays behind the page ─────────
+const HOME = [6.4, 1.4];
+const HL = {
+  windmill: { label: 'Windmill poster dunk', drive: true, start: [2.6, 0.5], at: 4.7, windmill: true },
+  spin360: { label: '360 dunk', drive: true, start: [4.4, -2.8], at: 4.3, spin: true },
+  reverse: { label: 'Reverse dunk', drive: true, start: [5.6, 3.2], at: 3.9, reverse: true },
+  halfcourt: { label: 'Half-court shot', type: 'logo', start: [1.0, 0.4], open: true },
+  stepback: { label: 'Step-back three', type: 'stepback', start: [7.0, 5.3] },
+  fade: { label: 'Fadeaway', type: 'fade', start: [8.4, 2.9] },
+};
+const D = { ix: 0, iz: 0, sprint: false, step: 'idle', t: 0, hl: null, id: null };
+
+function resetScene(x, z) {
+  S.tasks.length = 0; S.action = 'free'; S.p = 0; S.hasBall = true; B.state = 'held';
+  S.vx = S.vz = 0; S.ts = 1; S.zoom = 0; S.shake = 0; S.meterHold = 0; S.cheer = 0;
+  ball.material.emissive.setHex(0);
+  me.x = x; me.z = z; me.y = 0; me.yaw = Math.atan2(HOOP.x - x, HOOP.z - z);
+  for (const d of defenders) { d.down = 0; d.y = 0; d.x = d.gx; d.z = d.gz; }
+  shadow.hold = null;
+  const dx = HOOP.x - x, dz = HOOP.z - z, dd = Math.hypot(dx, dz) || 1;
+  shadow.x = x + dx / dd * 1.3; shadow.z = z + dz / dd * 1.3;
+  me.apply(1); ball.position.set(x, 0.7, z);
+}
+
+function playHighlight(key, id, title) {
+  const hl = HL[key]; if (!hl || S.mode !== 'page') return;
+  if (D.id === id && D.step !== 'idle' && D.step !== 'home') return; // already running this one
+  resetScene(hl.start[0], hl.start[1]);
+  if (hl.drive) { shadow.hold = [HOOP.x - 2.9, me.z >= 0 ? -1 : 1]; shadow.x = shadow.hold[0]; shadow.z = shadow.hold[1]; } // help defender waits in the lane
+  if (hl.open) { shadow.hold = [HOOP.x - 4.6, 0.9]; shadow.x = shadow.hold[0]; shadow.z = shadow.hold[1]; } // nobody guards a half-court heave
+  D.hl = hl; D.id = id; D.step = hl.drive ? 'run' : 'set'; D.t = 0;
+  page.caption(`${hl.label} — ${title}`); page.playing(id);
+}
+
+function director(dt) {
+  D.ix = D.iz = 0; D.sprint = false; D.t += dt;
+  const hl = D.hl;
+  if (D.step === 'run') {
+    const tx = HOOP.x - 0.6 - me.x, tz = HOOP.z - me.z, d = Math.hypot(tx, tz) || 1;
+    D.ix = tx / d; D.iz = tz / d; D.sprint = true;
+    if (distHoop(me.x, me.z) < hl.at || D.t > 3) { shootDown(hl); D.step = 'charge'; }
+  } else if (D.step === 'set') {
+    if (D.t > 0.55) { shootDown(hl); D.step = 'charge'; }
+  } else if (D.step === 'charge') {
+    if (S.action === 'charging' && S.p >= (hl.drive ? 0.5 : 0.825)) release();
+    if (S.action !== 'charging') { D.step = 'wait'; D.t = 0; }
+  } else if (D.step === 'wait') {
+    if ((S.action === 'free' && S.hasBall) || D.t > 8) { D.step = 'home'; D.t = 0; shadow.hold = null; }
+  } else if (D.step === 'home') {
+    const tx = HOME[0] - me.x, tz = HOME[1] - me.z, d = Math.hypot(tx, tz);
+    if (d < 0.35 || D.t > 6) { D.step = 'idle'; page.caption(''); page.playing(null); } else { D.ix = tx / d * 0.75; D.iz = tz / d * 0.75; }
+  }
 }
 
 function updateHud(dt) {
@@ -393,22 +476,33 @@ function updateHud(dt) {
 
 // ───────── main loop ─────────
 hud.init(); hud.pips(unlocked); hud.score(S.home, S.away);
-ball.position.set(me.x, 1, me.z);
+let closedOut = false;
+page.init({
+  onHighlight: (p) => p && playHighlight(p.highlight, p.id, p.title),
+  onGame: () => enterGame(),
+  onSection: (id) => {
+    S.section = id;
+    if (id === 'contact' && !closedOut && D.step === 'idle') { closedOut = true; playHighlight('fade', 'contact', 'the game-winner'); }
+  },
+});
+resetScene(HOME[0], HOME[1]); setMode('page');
 let last = performance.now();
 function slowTarget() {
   if (S.action === 'dunking') return S.t / S.shot.flight > 0.5 ? 0.32 : 1;
   if (S.action === 'hang' && S.t < 0.05) return 0.12;                      // hit-stop on the slam
+  if (B.state === 'flight' && B.shot.demo && B.t / B.T > 0.72) return 0.45;
   if (B.state === 'flight' && B.make && B.shot.spot && !unlocked.has(B.shot.spot.proj.id) && B.t / B.T > 0.7) return 0.4;
   return 1;
 }
 function tick(dt) {
-  if (S.mode === 'play') {
+  if (S.mode === 'play' || S.mode === 'page') {
+    const game = S.mode === 'play';
     S.ts += (slowTarget() - S.ts) * (1 - Math.exp(-dt * 14)); dt *= S.ts;
     S.time += dt;
-    S.clock -= dt; if (S.clock <= 0) { S.clock = 120; sfx.buzzer(); }
     for (let i = S.tasks.length - 1; i >= 0; i--) if (S.tasks[i].at <= S.time) { const t = S.tasks.splice(i, 1)[0]; t.fn(); }
-    updatePlayer(dt); updateDefenders(dt); updateExtras(dt); updateBall(dt); updateHud(dt);
-    hud.clock(S.clock);
+    if (!game) director(dt);
+    updatePlayer(dt); updateDefenders(dt); updateExtras(dt); updateBall(dt);
+    if (game) { S.clock -= dt; if (S.clock <= 0) { S.clock = 120; sfx.buzzer(); } updateHud(dt); hud.clock(S.clock); }
   } else if (S.mode === 'intro') {
     S.time += dt; poseMove(me, S.time, 0, true, Math.abs(Math.sin(S.time * 3.1))); me.apply(dt);
     me.local(-0.34, 0.4, v1); v1.y = BALL_R + 0.02 + Math.abs(Math.sin(S.time * 3.1)) * 0.84; ball.position.copy(v1);
@@ -428,4 +522,4 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // debug handle for testing from the console
-window.__arena = { S, me, B, unlocked, defenders, shootDown, shootUp, start, tick, render: () => renderer.render(scene, camera) };
+window.__arena = { S, me, B, D, unlocked, defenders, shootDown, shootUp, start, tick, playHighlight, enterGame, exitGame, render: () => renderer.render(scene, camera) };
