@@ -60,6 +60,7 @@ export const PROFILE = {
 
 // highlight: the move the player performs in the background when someone hovers the project
 //   'windmill' | 'spin360' | 'reverse' | 'halfcourt' | 'stepback' | 'fade'
+// panel: the "model view" readout shown with it: 'anomaly' | 'thermal' | 'summary' | 'telemetry' | 'cron'
 // play: which signature move unlocks the project in the optional game
 //   'dunk'     – poster dunk in the paint
 //   'corner'   – catch-and-shoot corner three
@@ -70,7 +71,7 @@ export const PROFILE = {
 // demo / demoLabel: the gold button (a live demo, a paper, anything). repo: the GitHub button.
 export const PROJECTS = [
   {
-    id: 'p1', highlight: 'windmill', when: 'Aug 2025 – Apr 2026', play: 'dunk', playName: 'POSTER DUNK', call: 'POSTERIZED!',
+    id: 'p1', highlight: 'windmill', panel: 'anomaly', when: 'Aug 2025 – Apr 2026', play: 'dunk', playName: 'POSTER DUNK', call: 'POSTERIZED!',
     spot: [9.6, 0], color: '#ff4d5a',
     title: 'Ex-VAD — Explainable Video Anomaly Detection',
     tagline: 'Cross-modal attention that fuses video features with generated captions to flag anomalies and explain them. First-author paper at IEEE iConSCEPT 2025.',
@@ -86,7 +87,7 @@ export const PROJECTS = [
     repo: 'https://github.com/2004Hrishikesh/Ex-VAD',
   },
   {
-    id: 'p2', highlight: 'spin360', when: 'Jun 2025', play: 'corner', playName: 'CORNER THREE', call: 'BANG!',
+    id: 'p2', highlight: 'spin360', panel: 'thermal', when: 'Jun 2025', play: 'corner', playName: 'CORNER THREE', call: 'BANG!',
     spot: [12.2, -7.0], color: '#35c8ff',
     title: 'Thermal-Image Human Detection',
     tagline: 'Dataset pipeline for a YOLO person detector on thermal images that still work in darkness and smoke. Team project at the National University of Singapore.',
@@ -100,7 +101,7 @@ export const PROJECTS = [
     demo: '#', repo: 'https://github.com/2004Hrishikesh/thermal-human-detection',
   },
   {
-    id: 'p3', highlight: 'halfcourt', when: 'Jul 2025', play: 'logo', playName: 'LOGO THREE', call: 'FROM THE LOGO!',
+    id: 'p3', highlight: 'halfcourt', panel: 'summary', when: 'Jul 2025', play: 'logo', playName: 'LOGO THREE', call: 'FROM THE LOGO!',
     spot: [3.4, 0], color: '#ffc531',
     title: 'Offline Legal Document Summarizer',
     tagline: 'A web app that summarises terms of service entirely offline — paste text, upload a PDF or DOCX, or give it a URL.',
@@ -115,7 +116,7 @@ export const PROJECTS = [
     demo: '#', repo: 'https://github.com/2004Hrishikesh/terms-summarizer',
   },
   {
-    id: 'p4', highlight: 'reverse', when: 'Sep 2025 – Nov 2025', play: 'fade', playName: 'FADEAWAY', call: 'CASH!',
+    id: 'p4', highlight: 'reverse', panel: 'telemetry', when: 'Sep 2025 – Nov 2025', play: 'fade', playName: 'FADEAWAY', call: 'CASH!',
     spot: [8.4, 2.9], color: '#b07bff',
     title: 'Vehicle Emissions Data Pipeline & Dashboard',
     tagline: 'A data-cleaning pipeline for three vehicle datasets, with an interactive dashboard that shows what was cleaned and why.',
@@ -129,7 +130,7 @@ export const PROJECTS = [
     demo: '#', repo: 'https://github.com/2004Hrishikesh/automotive-emissions-management',
   },
   {
-    id: 'p5', highlight: 'stepback', when: 'Fall 2026 – Present', play: 'stepback', playName: 'STEP-BACK THREE', call: 'SPLASH!',
+    id: 'p5', highlight: 'stepback', panel: 'cron', when: 'Fall 2026 – Present', play: 'stepback', playName: 'STEP-BACK THREE', call: 'SPLASH!',
     spot: [7.0, 5.3], color: '#3dffa2',
     title: 'UMass Dining Meal Planner',
     tagline: 'A daily pipeline that reads the UMass dining menu and emails a meal plan built around a protein target every morning.',

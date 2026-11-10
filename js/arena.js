@@ -89,7 +89,7 @@ export function buildArena(scene, player, projects) {
   scene.background = new THREE.Color(0x0b0914);
 
   // ── lights
-  scene.add(new THREE.HemisphereLight(0xfff4e0, 0x24163f, 0.75));
+  const hemi = new THREE.HemisphereLight(0xfff4e0, 0x24163f, 0.75); scene.add(hemi);
   const key = new THREE.DirectionalLight(0xfff1dc, 2.4);
   key.position.set(4, 20, 9); key.target.position.set(6.5, 0, 0);
   key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
@@ -207,6 +207,14 @@ export function buildArena(scene, player, projects) {
     slam() { netT = 0; boardT = 0; },
     flashBurst(n = 10) { flashRate = 14; hype = 1; flashes.slice(0, n).forEach(fire); },
     showSpots(v) { for (const s of spots) s.g.visible = v; },
+    // thermal view: the building goes cold so that only bodies read as warm
+    setThermal(on) {
+      hemi.intensity = on ? 0.16 : 0.75; key.intensity = on ? 0.35 : 2.4; rimLight.intensity = on ? 30 : 420;
+      floor.material.color.setHex(on ? 0x3a3a48 : 0xffffff);
+      bodies.material.color.setHex(on ? 0x6a6a6a : 0xffffff); heads.material.color.setHex(on ? 0xb0b0b0 : 0xffffff);
+      ribMat.color.setHex(on ? 0x2a2a2a : 0xffffff); rimMat.emissiveIntensity = on ? 0 : 0.25;
+      table.material.color.setHex(on ? 0x1a1a22 : 0x3c1aa6); tableTop.material.color.setHex(on ? 0x22222a : 0xffc531);
+    },
     setDone(spot) { spot.done = true; spot.beam.material.color.set(0x3dffa2); spot.beam.material.opacity = 0.05; },
     update(dt, time, activeSpot) {
       ribbonTex.offset.x += dt * 0.035;

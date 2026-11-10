@@ -5,6 +5,7 @@ import { PROJECTS, PLAYER } from './projects.js';
 import { sfx } from './audio.js';
 import { hud } from './hud.js';
 import { page } from './page.js';
+import { makeVision } from './vision.js';
 
 const G = 9.8, BALL_R = 0.12;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
@@ -66,6 +67,10 @@ const guards = [[mates[0], '1', 'Deadline'], [mates[1], '12', 'Merge Conflict'],
 });
 const defenders = [center, shadow, ...guards], bodies = [...defenders, ...mates];
 const ref = cast('ref', '', '', 5.2, -8.0); ref.yaw = 0;
+// everyone the "model view" overlay should detect, with a stable track id each
+const tracked = [me, ...mates, ...defenders, ref].map((b, i) => ({ b, id: i + 1, hero: b === me, seed: i * 1.37 }));
+const vision = makeVision(canvas, camera);
+function setThermal(on) { document.body.classList.toggle('thermal', on); arena.setThermal(on); for (const t of tracked) t.b.setHot(on); }
 
 const ball = new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 20, 14), new THREE.MeshStandardMaterial({ color: 0xd9641e, roughness: 0.75 }));
 ball.castShadow = true; scene.add(ball);
@@ -123,7 +128,7 @@ function mute() { $('btnMute').textContent = sfx.toggle() ? 'SOUND OFF' : 'SOUND
 
 function setMode(m) { S.mode = m; document.body.dataset.mode = m; arena.showSpots(m !== 'page'); resize(); }
 function start() { if (S.mode !== 'intro') return; sfx.init(); sfx.buzzer(); setMode('play'); }
-function enterGame() { if (S.mode !== 'page') return; D.step = 'idle'; D.id = null; page.caption(''); page.playing(null); resetScene(4.5, 3); window.scrollTo(0, 0); setMode('intro'); }
+function enterGame() { if (S.mode !== 'page') return; D.step = 'idle'; D.id = null; page.caption(''); page.playing(null); setThermal(false); resetScene(4.5, 3); window.scrollTo(0, 0); setMode('intro'); }
 function exitGame() { if (S.mode === 'page') return; keys.clear(); joy.x = joy.y = 0; resetScene(HOME[0], HOME[1]); setMode('page'); }
 function openList() { if (S.mode !== 'play') return; sfx.ui(); S.mode = 'modal'; hud.showList(); }
 hud.onClose = () => {
@@ -198,7 +203,7 @@ function release() {
 }
 
 function scored(sh, kind) {
-  if (sh.demo) { S.cheer = 1.8; arena.flashBurst(10); after(1.2, giveBall); return; } // highlight reel: no score, no unlocks
+  if (sh.demo) { S.cheer = 1.8; arena.flashBurst(10); vision.event('score'); after(1.2, giveBall); return; } // highlight reel: no score, no unlocks
   const pts = kind === 'dunk' ? 2 : sh.three ? 3 : 2;
   S.home += pts; S.missStreak = 0; S.cheer = 1.8; hud.score(S.home, S.away, true);
   const sp = sh.spot, fresh = sp && !unlocked.has(sp.proj.id);
@@ -407,7 +412,8 @@ const HL = {
   stepback: { label: 'Step-back three', type: 'stepback', start: [7.0, 5.3] },
   fade: { label: 'Fadeaway', type: 'fade', start: [8.4, 2.9] },
 };
-const D = { ix: 0, iz: 0, sprint: false, step: 'idle', t: 0, hl: null, id: null };
+const D = { ix: 0, iz: 0, sprint: false, step: 'idle', t: 0, hl: null, id: null, idleT: 0 };
+const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function resetScene(x, z) {
   S.tasks.length = 0; S.action = 'free'; S.p = 0; S.hasBall = true; B.state = 'held';
@@ -421,7 +427,7 @@ function resetScene(x, z) {
   me.apply(1); ball.position.set(x, 0.7, z);
 }
 
-function playHighlight(key, id, title) {
+function playHighlight(key, id, title, panel) {
   const hl = HL[key]; if (!hl || S.mode !== 'page') return;
   if (D.id === id && D.step !== 'idle' && D.step !== 'home') return; // already running this one
   resetScene(hl.start[0], hl.start[1]);
@@ -429,25 +435,31 @@ function playHighlight(key, id, title) {
   if (hl.open) { shadow.hold = [HOOP.x - 4.6, 0.9]; shadow.x = shadow.hold[0]; shadow.z = shadow.hold[1]; } // nobody guards a half-court heave
   D.hl = hl; D.id = id; D.step = hl.drive ? 'run' : 'set'; D.t = 0;
   page.caption(`${hl.label} — ${title}`); page.playing(id);
+  D.idleT = 0; vision.setMode(panel); setThermal(panel === 'thermal');
 }
 
 function director(dt) {
   D.ix = D.iz = 0; D.sprint = false; D.t += dt;
   const hl = D.hl;
+  if (D.step === 'idle') { // nobody is hovering: keep the court alive with a rolling highlight reel
+    D.idleT = (D.idleT || 0) + dt;
+    if (D.idleT > 7 && !calm && !document.hidden) { const keys = Object.keys(HL), k = keys[(Math.random() * keys.length) | 0]; playHighlight(k, 'reel', 'highlight reel', 'detect'); }
+    return;
+  }
   if (D.step === 'run') {
     const tx = HOOP.x - 0.6 - me.x, tz = HOOP.z - me.z, d = Math.hypot(tx, tz) || 1;
     D.ix = tx / d; D.iz = tz / d; D.sprint = true;
-    if (distHoop(me.x, me.z) < hl.at || D.t > 3) { shootDown(hl); D.step = 'charge'; }
+    if (distHoop(me.x, me.z) < hl.at || D.t > 3) { shootDown(hl); D.step = 'charge'; vision.event('shoot'); }
   } else if (D.step === 'set') {
-    if (D.t > 0.55) { shootDown(hl); D.step = 'charge'; }
+    if (D.t > 0.55) { shootDown(hl); D.step = 'charge'; vision.event('shoot'); }
   } else if (D.step === 'charge') {
-    if (S.action === 'charging' && S.p >= (hl.drive ? 0.5 : 0.825)) release();
+    if (S.action === 'charging' && S.p >= (hl.drive ? 0.5 : 0.825)) { release(); vision.event('release'); }
     if (S.action !== 'charging') { D.step = 'wait'; D.t = 0; }
   } else if (D.step === 'wait') {
     if ((S.action === 'free' && S.hasBall) || D.t > 8) { D.step = 'home'; D.t = 0; shadow.hold = null; }
   } else if (D.step === 'home') {
     const tx = HOME[0] - me.x, tz = HOME[1] - me.z, d = Math.hypot(tx, tz);
-    if (d < 0.35 || D.t > 6) { D.step = 'idle'; page.caption(''); page.playing(null); } else { D.ix = tx / d * 0.75; D.iz = tz / d * 0.75; }
+    if (d < 0.35 || D.t > 6) { D.step = 'idle'; D.idleT = 0; page.caption(''); page.playing(null); vision.setMode('detect'); setThermal(false); } else { D.ix = tx / d * 0.75; D.iz = tz / d * 0.75; }
   }
 }
 
@@ -478,11 +490,13 @@ function updateHud(dt) {
 hud.init(); hud.pips(unlocked); hud.score(S.home, S.away);
 let closedOut = false;
 page.init({
-  onHighlight: (p) => p && playHighlight(p.highlight, p.id, p.title),
+  onHighlight: (p) => p && playHighlight(p.highlight, p.id, p.title, p.panel),
+  visionOn: () => vision.enabled,
+  onVision: () => vision.toggle(),
   onGame: () => enterGame(),
   onSection: (id) => {
     S.section = id;
-    if (id === 'contact' && !closedOut && D.step === 'idle') { closedOut = true; playHighlight('fade', 'contact', 'the game-winner'); }
+    if (id === 'contact' && !closedOut && D.step === 'idle') { closedOut = true; playHighlight('fade', 'contact', 'the game-winner', 'detect'); }
   },
 });
 resetScene(HOME[0], HOME[1]); setMode('page');
@@ -513,13 +527,27 @@ function tick(dt) {
   arena.update(dt, S.time, S.mode === 'play' ? S.activeSpot : null);
   updateCamera(dt);
 }
+const traj = [];
+function drawVision(dt) {
+  traj.length = 0;
+  if (B.state === 'flight') for (let t = B.t; t <= B.T + 0.001; t += (B.T - B.t) / 14 + 0.001) { // the rest of the arc the ball is on
+    const k = t / B.T; traj.push(new THREE.Vector3(lerp(B.S.x, B.E.x, k), B.S.y + B.vy * t - 0.5 * G * t * t, lerp(B.S.z, B.E.z, k)));
+  }
+  const phase = S.action === 'dunking' || S.action === 'hang' ? 'dunk' : B.state === 'flight' ? 'flight' : S.action === 'released' ? 'shot'
+    : S.action === 'charging' ? 'gather' : S.cheer > 0.6 ? 'cheer' : Math.hypot(S.vx, S.vz) > 4 ? 'run' : 'idle';
+  vision.draw(dt, {
+    show: S.mode === 'page', busy: D.step !== 'idle', time: S.time, actors: tracked, ball, traj, phase,
+    anyDown: defenders.some((d) => d.down > 0.6), speed: Math.hypot(S.vx, S.vz), heroY: me.y,
+  });
+}
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   tick(dt);
   renderer.render(scene, camera);
+  drawVision(dt);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
 // debug handle for testing from the console
-window.__arena = { S, me, B, D, unlocked, defenders, shootDown, shootUp, start, tick, playHighlight, enterGame, exitGame, render: () => renderer.render(scene, camera) };
+window.__arena = { S, me, B, D, unlocked, defenders, shootDown, shootUp, start, tick, playHighlight, enterGame, exitGame, render: () => { renderer.render(scene, camera); drawVision(1 / 60); } };

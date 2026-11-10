@@ -65,7 +65,7 @@ export function makeBaller(o) {
     hb.rotation.x = Math.PI / 2; hb.position.y = 0.85; body.add(hb);
   }
 
-  const J = {};
+  const J = { head };
   for (const [side, sx] of [['L', 1], ['R', -1]]) {
     const up = limb(UARM, 0.055, skin); up.pivot.position.set(sx * 0.29, 0.55, 0); body.add(up.pivot);
     const cap = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 8), jersey); up.pivot.add(cap);
@@ -77,7 +77,7 @@ export function makeBaller(o) {
     const sh = limb(SHIN, 0.062, shinMat); th.end.add(sh.pivot);
     if (!o.pants) { const sock = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.05, 0.14, 8), trim); sock.position.y = -SHIN + 0.09; sh.pivot.add(sock); }
     const ft = new THREE.Mesh(new THREE.BoxGeometry(0.115, 0.1, 0.29), shoe); ft.position.set(0, -SHIN - 0.03, 0.065); ft.castShadow = true; sh.pivot.add(ft);
-    J['hip' + side] = th.pivot; J['kn' + side] = sh.pivot;
+    J['hip' + side] = th.pivot; J['kn' + side] = sh.pivot; J['foot' + side] = ft;
   }
 
   // pose targets — animation = set targets, joints ease toward them
@@ -86,6 +86,8 @@ export function makeBaller(o) {
 
   return {
     root, T, J, x: 0, z: 0, y: 0, yaw: 0,
+    // thermal view: bodies glow, skin hottest
+    setHot(on) { for (const [m, k] of [[skin, 1], [jersey, 0.5], [shorts, 0.42], [shoe, 0.2]]) { m.emissive.setHex(on ? 0xffffff : 0x000000); m.emissiveIntensity = k; } },
     crouch(c) { T.hipL = T.hipR = -c; T.knL = T.knR = 2 * c; T.bodyY = FOOT + (THIGH + SHIN) * Math.cos(c); },
     apply(dt, rate = 16) {
       const k = 1 - Math.exp(-dt * rate);

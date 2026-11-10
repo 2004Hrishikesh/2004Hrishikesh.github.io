@@ -97,6 +97,33 @@ export const page = {
       if (e.target.closest('[data-game]')) cb.onGame();
     });
     $('btnPlay').addEventListener('click', () => cb.onGame());
+    const vb = $('btnVision'); vb.textContent = 'Model view: ' + (cb.visionOn() ? 'on' : 'off');
+    vb.addEventListener('click', () => { vb.textContent = 'Model view: ' + (cb.onVision() ? 'on' : 'off'); });
+
+    // entrance animations: fade sections in and count the numbers up
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const countUp = (el) => {
+      const m = el.textContent.match(/^([^\d]*)([\d,]*\.?\d+)(.*)$/); if (!m || calm) return;
+      const end = parseFloat(m[2].replace(/,/g, '')), dec = (m[2].split('.')[1] || '').length, commas = m[2].includes(','), t0 = performance.now();
+      const step = (now) => {
+        const k = Math.min(1, (now - t0) / 900), e = 1 - Math.pow(1 - k, 3), val = (end * e).toFixed(dec);
+        el.textContent = m[1] + (commas ? Number(val).toLocaleString('en-US') : val) + m[3];
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    };
+    const reveal = new IntersectionObserver((entries) => {
+      for (const en of entries) if (en.isIntersecting) {
+        en.target.classList.add('in'); reveal.unobserve(en.target);
+        en.target.querySelectorAll('.stats b').forEach(countUp);
+      }
+    }, { rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('#page .card, #page .entry, #page section > h2, #page .skills > div, #page .kicker').forEach((el, i) => {
+      el.classList.add('reveal'); el.style.transitionDelay = (i % 3) * 60 + 'ms'; reveal.observe(el);
+    });
+    const bar = $('progress');
+    const onScroll = () => { const max = document.documentElement.scrollHeight - window.innerHeight; bar.style.transform = `scaleX(${max > 0 ? window.scrollY / max : 0})`; };
+    window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
 
     // which "quarter" is on screen
     const links = [...$('navLinks').children];

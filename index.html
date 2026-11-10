@@ -18,16 +18,38 @@
 </head>
 <body data-mode="page">
   <canvas id="game"></canvas>
+  <canvas id="vision"></canvas>
   <div id="shade"></div>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="thermal" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="0.33 0.5 0.17 0 0  0.33 0.5 0.17 0 0  0.33 0.5 0.17 0 0  0 0 0 1 0" />
+      <feComponentTransfer>
+        <feFuncR type="table" tableValues="0.02 0.22 0.60 0.90 1.00 1.00 1.00" />
+        <feFuncG type="table" tableValues="0.00 0.02 0.07 0.26 0.60 0.90 1.00" />
+        <feFuncB type="table" tableValues="0.10 0.44 0.52 0.20 0.05 0.35 1.00" />
+      </feComponentTransfer>
+    </filter>
+  </svg>
 
   <!-- recruiter-facing page (content is rendered from js/projects.js) -->
   <header id="nav">
     <a class="brand" href="#about"><b id="brandNo"></b><span id="brandName"></span></a>
     <nav id="navLinks"></nav>
+    <button id="btnVision" title="Show or hide what the vision system sees">Model view: on</button>
     <button id="btnPlay">Play the game ▶</button>
+    <i id="progress"></i>
   </header>
   <main id="page"></main>
-  <div id="caption"></div>
+  <div id="stageUI">
+    <div id="caption"></div>
+    <aside id="vpanel">
+      <header><b id="vpTitle"></b><span id="vpFps"></span></header>
+      <canvas id="vpChart" width="560" height="110"></canvas>
+      <div id="vpBig"></div>
+      <pre id="vpText"></pre>
+      <footer>Illustration: drawn from the scene's own data. No model runs in your browser.</footer>
+    </aside>
+  </div>
   <noscript><p style="padding:24px;color:#fff">This portfolio needs JavaScript. My work is also at github.com/2004Hrishikesh.</p></noscript>
 
   <!-- optional game -->
