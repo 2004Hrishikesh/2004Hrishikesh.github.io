@@ -60,10 +60,10 @@ export function makeVision(stage, camera) {
   }
   const proj = (p) => { v.copy(p).project(camera); return [(v.x * 0.5 + 0.5) * W, (-v.y * 0.5 + 0.5) * H, v.z]; };
 
-  function tagLabel(x, y, text, color) {
+  function tagLabel(x, y, text, color, ink = '#ffffff') {
     g.font = MONO; const w = g.measureText(text).width + 8;
     g.fillStyle = color; g.fillRect(x, y - 14, w, 14);
-    g.fillStyle = '#05040b'; g.fillText(text, x + 4, y - 3.5);
+    g.fillStyle = ink; g.fillText(text, x + 4, y - 3.5);
   }
 
   function drawActor(a, time, thermal) {
@@ -74,13 +74,13 @@ export function makeVision(stage, camera) {
     const h = y1 - y0, pad = h * 0.07; x0 -= pad * 1.6; x1 += pad * 1.6; y0 -= h * 0.11; y1 += pad;
     if (x1 < 0 || x0 > W || y1 < 0 || y0 > H || h < 14) return false;
     const fallen = a.b.down > 0.6;
-    const col = thermal ? '#eafff4' : fallen ? '#ff5d6c' : a.hero ? '#ffc531' : '#4df3ff';
+    const col = thermal ? '#eafff4' : fallen ? '#e03131' : a.hero ? '#d9480f' : '#0b7285'; // dark, saturated strokes read on a bright court
 
     if (!thermal) { // pose skeleton
       g.strokeStyle = col; g.globalAlpha = alpha * 0.75; g.lineWidth = 1.4; g.beginPath();
       for (const [i, j] of BONES) { g.moveTo(pts[i][0], pts[i][1]); g.lineTo(pts[j][0], pts[j][1]); }
       g.stroke();
-      g.fillStyle = '#fff'; g.globalAlpha = alpha * 0.9;
+      g.fillStyle = '#10242b'; g.globalAlpha = alpha * 0.9;
       for (const p of pts) g.fillRect(p[0] - 1.5, p[1] - 1.5, 3, 3);
     }
     // corner-bracket box
@@ -90,14 +90,14 @@ export function makeVision(stage, camera) {
     g.stroke();
     if (h > (W < 700 ? 52 : 34) || a.hero) {
       const conf = (0.93 + 0.05 * Math.sin(a.seed * 7.3 + time * 0.9) - (fallen ? 0.2 : 0)).toFixed(2);
-      tagLabel(x0, y0 - 2, W < 700 ? `#${a.id} ${conf}` : `${fallen ? 'person·down' : 'person'} ${conf}  #${a.id}`, col); // short labels on a small stage
+      tagLabel(x0, y0 - 2, W < 700 ? `#${a.id} ${conf}` : `${fallen ? 'person·down' : 'person'} ${conf}  #${a.id}`, col, thermal ? '#0c0d13' : '#fff'); // short labels on a small stage
     }
     return true;
   }
 
   function drawBall(ball, traj, time) {
     trail.push(ball.position.clone()); if (trail.length > 26) trail.shift();
-    g.lineWidth = 2; g.strokeStyle = '#ff9a3d';
+    g.lineWidth = 2; g.strokeStyle = '#d9480f';
     for (let i = 1; i < trail.length; i++) {
       const a = proj(trail[i - 1]), b = proj(trail[i]);
       g.globalAlpha = alpha * (i / trail.length) * 0.8; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
@@ -105,23 +105,23 @@ export function makeVision(stage, camera) {
     const p = proj(ball.position), r = Math.max(7, 900 / Math.max(6, camera.position.distanceTo(ball.position)) * 0.12);
     g.globalAlpha = alpha; g.beginPath(); g.arc(p[0], p[1], r + 3, 0, 7); g.stroke();
     if (traj && traj.length > 1) { // predicted flight path
-      g.setLineDash([5, 5]); g.strokeStyle = '#ffc531'; g.lineWidth = 1.6; g.beginPath();
+      g.setLineDash([5, 5]); g.strokeStyle = '#d9480f'; g.lineWidth = 1.8; g.beginPath();
       traj.forEach((t, i) => { const q = proj(t); if (i) g.lineTo(q[0], q[1]); else g.moveTo(q[0], q[1]); });
       g.stroke(); g.setLineDash([]);
       const e = proj(traj[traj.length - 1]);
       g.beginPath(); g.arc(e[0], e[1], 9 + 3 * Math.sin(time * 10), 0, 7); g.stroke();
-      tagLabel(e[0] + 12, e[1], 'trajectory · P(make) 0.96', '#ffc531');
-    } else tagLabel(p[0] + r + 5, p[1] - r, 'ball 0.99', '#ff9a3d');
+      tagLabel(e[0] + 12, e[1], 'trajectory · P(make) 0.96', '#d9480f');
+    } else tagLabel(p[0] + r + 5, p[1] - r, 'ball 0.99', '#d9480f');
   }
 
   function drawChart() {
     const w = chart.width, h = chart.height; cg.clearRect(0, 0, w, h);
-    cg.strokeStyle = 'rgba(255,255,255,.25)'; cg.setLineDash([4, 4]); cg.lineWidth = 1;
+    cg.strokeStyle = 'rgba(23,26,33,.28)'; cg.setLineDash([4, 4]); cg.lineWidth = 1;
     cg.beginPath(); cg.moveTo(0, h * 0.5); cg.lineTo(w, h * 0.5); cg.stroke(); cg.setLineDash([]);
-    cg.lineWidth = 2; cg.strokeStyle = score > 0.5 ? '#ff5d6c' : '#4df3ff'; cg.beginPath();
+    cg.lineWidth = 2; cg.strokeStyle = score > 0.5 ? '#e03131' : '#0b7285'; cg.beginPath();
     hist.forEach((s, i) => { const x = i / (hist.length - 1) * w, y = h - 3 - s * (h - 6); if (i) cg.lineTo(x, y); else cg.moveTo(x, y); });
     cg.stroke();
-    cg.lineTo(w, h); cg.lineTo(0, h); cg.closePath(); cg.fillStyle = score > 0.5 ? 'rgba(255,93,108,.16)' : 'rgba(77,243,255,.1)'; cg.fill();
+    cg.lineTo(w, h); cg.lineTo(0, h); cg.closePath(); cg.fillStyle = score > 0.5 ? 'rgba(224,49,49,.12)' : 'rgba(11,114,133,.1)'; cg.fill();
   }
 
   return {
@@ -142,7 +142,7 @@ export function makeVision(stage, camera) {
         for (const a of s.actors) if (drawActor(a, s.time, thermal)) seen++;
         drawBall(s.ball, s.traj, s.time);
         sweep = (sweep + dt * 0.22) % 1.25; // slow scan line, so it reads as a live feed
-        g.globalAlpha = alpha * 0.16; g.fillStyle = '#4df3ff'; g.fillRect(0, sweep * H, W, 2);
+        g.globalAlpha = alpha * 0.14; g.fillStyle = thermal ? '#eafff4' : '#0b7285'; g.fillRect(0, sweep * H, W, 2);
         g.globalAlpha = 1;
       }
 

@@ -47,7 +47,7 @@ export const hud = {
   _show(html, accent) {
     $('modalBody').innerHTML = html;
     const j = $('modal').querySelector('.jumbo');
-    j.style.setProperty('--accent', accent || '#ffc531');
+    j.style.setProperty('--accent', accent || '#c2410c');
     if (!this.open) { $('modal').classList.remove('hidden'); j.style.animation = 'none'; void j.offsetWidth; j.style.animation = ''; }
     this.open = true; $('modal').scrollTop = 0;
   },
@@ -84,7 +84,7 @@ export const hud = {
       <div class="jm-foot">
         ${links([[L.github, 'GITHUB ↗'], [L.linkedin, 'LINKEDIN ↗'], [L.resume, 'RÉSUMÉ ↗'], [L.email, 'EMAIL ↗']])}
         <span class="sp"></span><button data-act="close">BACK TO GAME ⏎</button>
-      </div>`, '#ffc531');
+      </div>`, '#c2410c');
   },
   close() {
     if (!this.open) return;

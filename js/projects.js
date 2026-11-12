@@ -72,7 +72,7 @@ export const PROFILE = {
 export const PROJECTS = [
   {
     id: 'p1', highlight: 'windmill', panel: 'anomaly', when: 'Aug 2025 – Apr 2026', play: 'dunk', playName: 'POSTER DUNK', call: 'POSTERIZED!',
-    spot: [9.6, 0], color: '#ff4d5a',
+    spot: [9.6, 0], color: '#c92a2a',
     title: 'Ex-VAD — Explainable Video Anomaly Detection',
     tagline: 'Cross-modal attention that fuses video features with generated captions to flag anomalies and explain them. First-author paper at IEEE iConSCEPT 2025.',
     features: [
@@ -88,7 +88,7 @@ export const PROJECTS = [
   },
   {
     id: 'p2', highlight: 'spin360', panel: 'thermal', when: 'Jun 2025', play: 'corner', playName: 'CORNER THREE', call: 'BANG!',
-    spot: [12.2, -7.0], color: '#35c8ff',
+    spot: [12.2, -7.0], color: '#1864ab',
     title: 'Thermal-Image Human Detection',
     tagline: 'Dataset pipeline for a YOLO person detector on thermal images that still work in darkness and smoke. Team project at the National University of Singapore.',
     features: [
@@ -102,7 +102,7 @@ export const PROJECTS = [
   },
   {
     id: 'p3', highlight: 'halfcourt', panel: 'summary', when: 'Jul 2025', play: 'logo', playName: 'LOGO THREE', call: 'FROM THE LOGO!',
-    spot: [3.4, 0], color: '#ffc531',
+    spot: [3.4, 0], color: '#0b7285',
     title: 'Offline Legal Document Summarizer',
     tagline: 'A web app that summarises terms of service entirely offline — paste text, upload a PDF or DOCX, or give it a URL.',
     features: [
@@ -117,7 +117,7 @@ export const PROJECTS = [
   },
   {
     id: 'p4', highlight: 'reverse', panel: 'telemetry', when: 'Sep 2025 – Nov 2025', play: 'fade', playName: 'FADEAWAY', call: 'CASH!',
-    spot: [8.4, 2.9], color: '#b07bff',
+    spot: [8.4, 2.9], color: '#6741d9',
     title: 'Vehicle Emissions Data Pipeline & Dashboard',
     tagline: 'A data-cleaning pipeline for three vehicle datasets, with an interactive dashboard that shows what was cleaned and why.',
     features: [
@@ -131,7 +131,7 @@ export const PROJECTS = [
   },
   {
     id: 'p5', highlight: 'stepback', panel: 'cron', when: 'Fall 2026 – Present', play: 'stepback', playName: 'STEP-BACK THREE', call: 'SPLASH!',
-    spot: [7.0, 5.3], color: '#3dffa2',
+    spot: [7.0, 5.3], color: '#2b8a3e',
     title: 'UMass Dining Meal Planner',
     tagline: 'A daily pipeline that reads the UMass dining menu and emails a meal plan built around a protein target every morning.',
     features: [

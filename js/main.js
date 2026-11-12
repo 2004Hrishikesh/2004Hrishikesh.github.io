@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { buildArena, HOOP, COURT } from './arena.js';
-import { makeBaller, poseMove, poseShoot, poseDunk, poseHang, poseDefend, poseDown, poseIdle } from './player.js';
+import { makeBaller, poseMove, poseShoot, poseGather, poseDunk, poseHang, poseAir, poseDefend, poseFall, poseIdle, SHOULDER_X, STAND_Y } from './player.js';
 import { PROJECTS, PLAYER } from './projects.js';
 import { sfx } from './audio.js';
 import { hud } from './hud.js';
@@ -20,7 +20,7 @@ const canvas = document.getElementById('game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, 1, 0.5, 120);
 function resize() { // the canvas is full-window on desktop and a pinned band on phones
@@ -32,9 +32,9 @@ window.addEventListener('resize', resize); new ResizeObserver(resize).observe(ca
 const arena = buildArena(scene, PLAYER, PROJECTS);
 
 // ───────── actors ─────────
-const me = makeBaller({ skin: 0x7a4a2c, jersey: 0xffc531, shorts: 0xffc531, trim: 0x5b2bd6, shoe: 0xffffff, number: PLAYER.number, numColor: '#5b2bd6', headband: true });
+const me = makeBaller({ skin: 0x7a4a2c, jersey: 0xf6f7f9, shorts: 0xf6f7f9, trim: 0xe8590c, shoe: 0xffffff, number: PLAYER.number, numColor: '#e8590c', headband: true });
 me.x = 4.5; me.z = 3; me.yaw = Math.PI / 2; scene.add(me.root);
-const marker = new THREE.Mesh(new THREE.RingGeometry(0.46, 0.6, 40), new THREE.MeshBasicMaterial({ color: 0xffc531, transparent: true, opacity: 0.9, depthWrite: false }));
+const marker = new THREE.Mesh(new THREE.RingGeometry(0.46, 0.6, 40), new THREE.MeshBasicMaterial({ color: 0xe8590c, transparent: true, opacity: 0.9, depthWrite: false, fog: false }));
 marker.rotation.x = -Math.PI / 2; marker.position.y = 0.025; scene.add(marker);
 
 camera.layers.enable(1); // name labels live on layer 1 so the floor mirror ignores them
@@ -42,19 +42,19 @@ const SKINS = [0x8d5a3b, 0x5c3a24, 0xc68e63, 0x4a301f, 0xdba882];
 function nameSprite(text) {
   const c = document.createElement('canvas'); c.width = 320; c.height = 64; const g = c.getContext('2d');
   g.font = '800 40px "Barlow Condensed", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.lineWidth = 7; g.strokeStyle = 'rgba(10,6,24,.85)'; g.strokeText(text, 160, 34); g.fillStyle = '#fff'; g.fillText(text, 160, 34);
+  g.lineWidth = 7; g.strokeStyle = 'rgba(22,26,36,.9)'; g.strokeText(text, 160, 34); g.fillStyle = '#fff'; g.fillText(text, 160, 34);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthTest: false }));
-  sp.scale.set(1.9, 0.38, 1); sp.layers.set(1); sp.renderOrder = 5; scene.add(sp); return sp;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthTest: false, fog: false }));
+  sp.scale.set(1.35, 0.27, 1); sp.layers.set(1); sp.renderOrder = 5; scene.add(sp); return sp;
 }
 let castN = 0;
 function cast(kind, n, name, x, z) {
   const i = castN++;
-  const look = kind === 'mate' ? { jersey: 0xffc531, shorts: 0xffc531, trim: 0x5b2bd6, shoe: 0xffffff, numColor: '#5b2bd6' }
-    : kind === 'ref' ? { jersey: 0xffffff, shorts: 0x111111, trim: 0x111111, shoe: 0x111111, numColor: 'rgba(0,0,0,0)', stripes: true, pants: true }
-    : { jersey: 0x1e7a3c, shorts: 0x1e7a3c, trim: 0xf4f4f4, shoe: 0x16161c, numColor: '#f4f4f4' };
+  const look = kind === 'mate' ? { jersey: 0xf6f7f9, shorts: 0xf6f7f9, trim: 0xe8590c, shoe: 0xffffff, numColor: '#233552' }
+    : kind === 'ref' ? { jersey: 0xffffff, shorts: 0x1c1c1f, trim: 0x1c1c1f, shoe: 0x1c1c1f, numColor: 'rgba(0,0,0,0)', stripes: true, pants: true }
+    : { jersey: 0x233552, shorts: 0x233552, trim: 0xffffff, shoe: 0x1c1f26, numColor: '#ffffff' };
   const b = makeBaller({ ...look, skin: SKINS[(i * 3 + 1) % SKINS.length], number: n, hair: i % 4 === 2 ? null : 0x16110e, hairLen: i % 3 ? 0.48 : 0.4, headband: i % 5 === 3 });
-  b.x = b.gx = x; b.z = b.gz = z; b.yaw = kind === 'mate' ? Math.PI / 2 : -Math.PI / 2; b.down = 0; b.seed = i * 1.7;
+  b.x = b.gx = x; b.z = b.gz = z; b.yaw = kind === 'mate' ? Math.PI / 2 : -Math.PI / 2; b.down = 0; b.seed = i * 1.7; b.stepScale = kind === 'rival' ? 0.6 : 1; // defenders take short, quick shuffle steps
   b.label = name ? nameSprite(name) : null; scene.add(b.root); return b;
 }
 // your teammates are your tech stack; the other team is everything that ships late
@@ -63,7 +63,8 @@ const mates = [[11.5, 6.6, '3'], [6.0, -5.3, '11'], [12.0, -3.7, '34'], [2.4, 4.
   .map(([x, z, n], i) => cast('mate', n, stackNames[i] || 'Teammate', x, z));
 const center = cast('rival', '0', 'Legacy Code', HOOP.x - 1.5, 0), shadow = cast('rival', '4', 'Bug', 7, 2);
 const guards = [[mates[0], '1', 'Deadline'], [mates[1], '12', 'Merge Conflict'], [mates[3], '30', 'Scope Creep']].map(([m, n, name]) => {
-  const d = Math.hypot(HOOP.x - m.x, HOOP.z - m.z); return cast('rival', n, name, m.x + (HOOP.x - m.x) / d * 1.15, m.z + (HOOP.z - m.z) / d * 1.15);
+  const d = Math.hypot(HOOP.x - m.x, HOOP.z - m.z), g = cast('rival', n, name, m.x + (HOOP.x - m.x) / d * 1.15, m.z + (HOOP.z - m.z) / d * 1.15);
+  g.mate = m; return g;
 });
 const defenders = [center, shadow, ...guards], bodies = [...defenders, ...mates];
 const ref = cast('ref', '', '', 5.2, -8.0); ref.yaw = 0;
@@ -174,7 +175,7 @@ function release() {
     sh.make = p >= sh.gs;
     S.meterState = sh.make ? 'green' : 'miss'; S.meterHold = 0.5;
     S.action = 'dunking'; S.t = 0;
-    S.from.set(me.x, 0, me.z); S.to.set(HOOP.x - 0.3, 0, HOOP.z + (sh.reverse ? 0.29 : -0.29)); sh.yaw0 = me.yaw;
+    S.from.set(me.x, 0, me.z); S.to.set(HOOP.x - (sh.reverse ? 0.3 : 0.5), 0, HOOP.z + (sh.reverse ? SHOULDER_X : -SHOULDER_X)); sh.yaw0 = me.yaw;
     sh.flight = 0.5 + S.from.distanceTo(S.to) * 0.07; S.vx = S.vz = 0;
     sfx.squeak();
     return;
@@ -221,6 +222,8 @@ function giveBall() { if (S.hasBall || B.state === 'pass') return; B.state = 'pa
 
 // ───────── per-frame updates ─────────
 const v1 = new THREE.Vector3(), v2 = new THREE.Vector3();
+const hoopLook = new THREE.Vector3(HOOP.x, HOOP.y, HOOP.z), eyeLook = new THREE.Vector3();
+for (const b of [...bodies, ref]) b.look = ball.position; // everyone else keeps their eyes on the ball
 let lastDir = [0, 0], squeakAt = 0, bounceWas = 0;
 
 function updatePlayer(dt) {
@@ -242,6 +245,9 @@ function updatePlayer(dt) {
       if (ix * lastDir[0] + iz * lastDir[1] < 0.2 && S.time > squeakAt) { sfx.squeak(); squeakAt = S.time + 0.25; }
       lastDir = [ix / mag, iz / mag];
     } else { lastDir = [0, 0]; if (S.mode === 'page') me.yaw = dampAngle(me.yaw, -Math.PI / 2, 1 - Math.exp(-dt * 3)); } // idle: face the viewer
+    // eyes: on the rim when attacking it, on the viewer when idle on the page, otherwise on the defender
+    if (mag > 0.15) me.look = S.vx > 1 ? hoopLook : null;
+    else me.look = S.mode === 'page' ? camera.position : eyeLook.set(shadow.x, 1.7, shadow.z);
     for (const d of bodies) { // don't run through other players
       const dx = me.x - d.x, dz = me.z - d.z, dd = Math.hypot(dx, dz);
       if (dd < 0.8 && dd > 0.001 && !d.down) { me.x = d.x + dx / dd * 0.8; me.z = d.z + dz / dd * 0.8; }
@@ -250,19 +256,20 @@ function updatePlayer(dt) {
     S.dph += dt * lerp(3.1, 6.2, Math.min(1, m)); const bounce = Math.abs(Math.sin(S.dph));
     poseMove(me, S.time, Math.min(1, m), S.hasBall, bounce);
     if (S.hasBall) {
-      me.local(-0.34, 0.4, v1); v1.y = BALL_R + 0.02 + bounce * 0.84;
+      me.local(-0.33, lerp(0.34, 0.56, Math.min(1, m)), v1); v1.y = BALL_R + 0.02 + bounce * 0.8; // pushed further ahead at speed
       ball.position.lerp(v1, 1 - Math.exp(-dt * 30));
+      v2.copy(ball.position); v2.y = Math.max(v2.y + BALL_R + 0.02, 0.74); me.reach('R', v2);          // the hand rides the ball down and meets it coming up
       if (bounce < 0.25 && bounceWas >= 0.25) sfx.bounce(0.7);
       bounceWas = bounce;
     }
   } else if (S.action === 'charging' || S.action === 'released') {
     const sh = S.shot, dunk = sh.type === 'dunk';
     S.p += dt / sh.dur;
-    me.yaw = dampAngle(me.yaw, toHoop, turn);
+    me.yaw = dampAngle(me.yaw, toHoop, turn); me.look = hoopLook;
     if (dunk) {
       me.x = clamp(me.x + S.vx * dt, -2.4, HOOP.x - 0.9); me.z = clamp(me.z + S.vz * dt, -7.6, 7.6);
       const f = Math.exp(-dt * 3.5); S.vx *= f; S.vz *= f;
-      me.crouch(0.3 + 0.35 * Math.min(1, S.p)); me.T.lean = 0.3; me.T.shRx = -0.9; me.T.elR = -1.3; me.T.shLx = -0.9; me.T.elL = -1.3; me.T.tilt = 0;
+      poseGather(me, S.p);
     } else {
       me.y = jumpY(S.p);
       if (sh.type === 'stepback' && S.p < 0.3) { const sp = 1.3 / (0.3 * sh.dur); me.x -= hx * sp * dt; me.z -= hz * sp * dt; }
@@ -274,11 +281,11 @@ function updatePlayer(dt) {
       me.handPos('R', v1); v1.y += 0.11; v1.x += hx * 0.06; v1.z += hz * 0.06;
       ball.position.lerp(v1, 1 - Math.exp(-dt * 40));
       if (S.p >= 1) release();
-    } else if (S.p >= 1.4) { S.action = 'free'; me.y = 0; }
+    } else if (S.p >= 1.4) { S.action = 'free'; me.y = 0; me.nudge('bodyY', -1.4); } // knees give on landing
   } else if (S.action === 'dunking') {
     const sh = S.shot; S.t += dt; const k = Math.min(1, S.t / sh.flight), e = 1 - (1 - k) * (1 - k);
     me.x = lerp(S.from.x, S.to.x, k); me.z = lerp(S.from.z, S.to.z, k);
-    me.y = 0.86 * e + (sh.windmill ? 1.05 : 0.8) * Math.sin(Math.PI * k);
+    me.y = 0.84 * e + (sh.windmill ? 1.05 : 0.8) * Math.sin(Math.PI * k);
     if (sh.spin) me.yaw = lerp(sh.yaw0, Math.PI / 2, k) + Math.PI * 2 * smooth(0.08, 0.88, k);          // full 360 in the air
     else if (sh.reverse) me.yaw = dampAngle(me.yaw, k > 0.28 ? -Math.PI / 2 : Math.PI / 2, 1 - Math.exp(-dt * 9)); // turn the back to the rim
     else me.yaw = dampAngle(me.yaw, Math.PI / 2, turn);
@@ -293,11 +300,12 @@ function updatePlayer(dt) {
       else { ball.position.set(HOOP.x - 0.2, HOOP.y + 0.2, HOOP.z); B.vel.set(-3.5, 4.5, (Math.random() - 0.5) * 3); sfx.rim(); hud.feedback('RIM STUFFED — HOLD LONGER', 'bad'); missed(); }
     }
   } else if (S.action === 'hang') {
-    S.t += dt; poseHang(me, S.time); if (S.shot.reverse) me.T.shRx = -3.6; S.zoom = 1;
+    S.t += dt; poseHang(me, S.time, S.t); me.T.shRx = S.shot.reverse ? -3.35 : -2.85; S.zoom = 1;
+    me.y += (0.74 - me.y) * (1 - Math.exp(-dt * 10)); // weight settles onto the arm
     if (S.t > 0.55) { S.action = 'fall'; S.vy = 0; }
   } else if (S.action === 'fall') {
-    S.vy -= G * dt; me.y += S.vy * dt; me.x -= 1.4 * dt; me.yaw = dampAngle(me.yaw, Math.PI / 2, turn); me.crouch(0.3); me.T.shRx = -1.2; me.T.elR = -0.4; me.T.tilt = 0; me.T.lean = 0.1;
-    if (me.y <= 0) { me.y = 0; S.action = 'free'; S.vx = S.vz = 0; sfx.bounce(0.9); }
+    S.vy -= G * dt; me.y += S.vy * dt; me.x -= 1.4 * dt; me.yaw = dampAngle(me.yaw, Math.PI / 2, turn); poseAir(me);
+    if (me.y <= 0) { me.y = 0; S.action = 'free'; S.vx = S.vz = 0; me.nudge('bodyY', -2.4); sfx.bounce(0.9); }
   }
   me.apply(dt);
   marker.position.x = me.x; marker.position.z = me.z;
@@ -315,15 +323,15 @@ function updateDefenders(dt) {
   const goals = [
     [center, HOOP.x - hx * Math.min(1.6, dh * 0.5), HOOP.z - hz * Math.min(1.6, dh * 0.5), 2.6, dh < 6 || S.action === 'dunking'],
     shadow.hold ? [shadow, shadow.hold[0], shadow.hold[1], 3.6, true] : [shadow, me.x + hx * 1.3, me.z + hz * 1.3, 3.6, shooting],
-    ...guards.map((g) => [g, g.gx + Math.sin(S.time * 0.8 + g.seed) * 0.3, g.gz + Math.cos(S.time * 0.6 + g.seed) * 0.2, 1.6, false]),
+    ...guards.map((g) => { const m = g.mate, gd = Math.hypot(HOOP.x - m.x, HOOP.z - m.z) || 1; return [g, m.x + (HOOP.x - m.x) / gd * 1.15, m.z + (HOOP.z - m.z) / gd * 1.15, 2.0, false]; }),
   ];
   for (const [d, gx, gz, sp, up] of goals) {
     if (d.down > 0) {
       d.down -= dt;
       if (d.down > 2.2) { d.x += d.slide[0] * 3.2 * dt; d.z += d.slide[1] * 3.2 * dt; }
-      if (d.down > 0.6) { poseDown(d); d.y = 0.14; } else { poseDefend(d, S.time, false, 0); d.y = 0; }
-      if (d.down <= 0) d.down = 0;
-      d.apply(dt, d.down > 0.6 ? 9 : 5); continue;
+      d.y += (poseFall(d, 2.6 - d.down) - d.y) * (1 - Math.exp(-dt * 10)); d.look = null;
+      if (d.down <= 0) { d.down = 0; d.look = ball.position; }
+      d.apply(dt, 11); continue;
     }
     // the on-ball defender backs off so the paint stays open for drives
     const tx = d === shadow && dh < 3.2 ? d.x : gx, tz = d === shadow && dh < 3.2 ? d.z : gz;
@@ -333,6 +341,7 @@ function updateDefenders(dt) {
     d.yaw = dampAngle(d.yaw, Math.atan2(me.x - d.x, me.z - d.z), 1 - Math.exp(-dt * 8));
     d.y = d === shadow && shooting ? jumpY(S.p - 0.12) * 0.75 : 0;
     poseDefend(d, S.time, up, dd > 0.1 ? 1 : 0);
+    if (d.y > 0.04) { const T = d.T; T.ikL = T.ikR = false; T.bodyY = STAND_Y; T.hipL = -0.1; T.knL = 0.25; T.hipR = -0.2; T.knR = 0.4; T.toeL = T.toeR = 0.5; } // off the floor: legs hang
     d.apply(dt);
   }
 }
@@ -341,11 +350,18 @@ function updateDefenders(dt) {
 function updateExtras(dt) {
   S.cheer -= dt;
   for (const m of mates) {
+    if (S.time > (m.nextMove || 0)) { // drift to a new spot near home every few seconds
+      m.nextMove = S.time + 5 + Math.random() * 6; const a = Math.random() * 6.283, r = 0.5 + Math.random() * 0.7;
+      m.tx = m.gx + Math.cos(a) * r; m.tz = m.gz + Math.sin(a) * r;
+    }
+    const dx = m.tx - m.x, dz = m.tz - m.z, dd = Math.hypot(dx, dz), st = Math.min(dd, 1.6 * dt);
+    if (dd > 0.06) { m.x += dx / dd * st; m.z += dz / dd * st; }
     m.yaw = dampAngle(m.yaw, Math.atan2(me.x - m.x, me.z - m.z), 1 - Math.exp(-dt * 5));
+    m.y = S.cheer > 0 ? Math.abs(Math.sin(S.time * 9 + m.seed)) * 0.09 : 0;
     poseIdle(m, S.time, S.cheer > 0, m.seed); m.apply(dt);
   }
   ref.yaw = dampAngle(ref.yaw, Math.atan2(ball.position.x - ref.x, ball.position.z - ref.z), 1 - Math.exp(-dt * 3));
-  poseIdle(ref, S.time * 0.5, false, 0.4); ref.T.shLx = ref.T.shRx = 0.25; ref.T.elL = ref.T.elR = -0.2; ref.apply(dt);
+  poseIdle(ref, S.time * 0.5, false, 1.6); ref.T.shLx = ref.T.shRx = 0.3; ref.T.shLz = -0.2; ref.T.shRz = 0.2; ref.T.elL = ref.T.elR = -0.35; ref.apply(dt); // hands behind the back
   for (const b of bodies) b.label.position.set(b.x, -0.1, b.z + 0.25);
 }
 
@@ -375,8 +391,9 @@ function updateBall(dt) {
 }
 
 const camPos = new THREE.Vector3(-10.5, 8.6, 0), camLook = new THREE.Vector3(8, 1.4, 0), camT = { p: new THREE.Vector3(), l: new THREE.Vector3() };
-let viewShift = 0;
+let viewShift = 0, dbgCam = null, dbgHold = false;
 function updateCamera(dt) {
+  if (dbgCam) { camera.clearViewOffset(); camera.fov = dbgCam[6] || 30; camera.updateProjectionMatrix(); camera.position.set(dbgCam[0], dbgCam[1], dbgCam[2]); camera.lookAt(dbgCam[3], dbgCam[4], dbgCam[5]); return; } // close-ups while testing
   const wide = camera.aspect < 1.5 ? clamp(1.5 / camera.aspect, 1, 2.05) : 1;
   const z = S.zoom; S.zoom = Math.max(0, S.zoom - dt * 1.2);
   let fov = 30, rate = 3.5;
@@ -398,7 +415,8 @@ function updateCamera(dt) {
   viewShift += ((S.mode === 'page' && window.innerWidth > 860 ? 0.2 : 0) - viewShift) * k;
   camera.setViewOffset(w, h, -viewShift * w, 0, w, h);
   S.shake *= Math.exp(-dt * 7);
-  camera.position.set(camPos.x + (Math.random() - 0.5) * S.shake, camPos.y + (Math.random() - 0.5) * S.shake, camPos.z);
+  const hh = S.mode === 'page' ? 0.05 : 0;
+  camera.position.set(camPos.x + (Math.random() - 0.5) * S.shake + Math.sin(S.time * 0.41) * hh, camPos.y + (Math.random() - 0.5) * S.shake + Math.sin(S.time * 0.57 + 1) * hh, camPos.z + Math.sin(S.time * 0.33 + 2) * hh);
   camera.lookAt(camLook);
 }
 
@@ -424,7 +442,8 @@ function resetScene(x, z) {
   shadow.hold = null;
   const dx = HOOP.x - x, dz = HOOP.z - z, dd = Math.hypot(dx, dz) || 1;
   shadow.x = x + dx / dd * 1.3; shadow.z = z + dz / dd * 1.3;
-  me.apply(1); ball.position.set(x, 0.7, z);
+  me.look = null; me.apply(1); ball.position.set(x, 0.7, z);
+  for (const d of defenders) d.snap();
 }
 
 function playHighlight(key, id, title, panel) {
@@ -519,7 +538,8 @@ function tick(dt) {
     if (game) { S.clock -= dt; if (S.clock <= 0) { S.clock = 120; sfx.buzzer(); } updateHud(dt); hud.clock(S.clock); }
   } else if (S.mode === 'intro') {
     S.time += dt; poseMove(me, S.time, 0, true, Math.abs(Math.sin(S.time * 3.1))); me.apply(dt);
-    me.local(-0.34, 0.4, v1); v1.y = BALL_R + 0.02 + Math.abs(Math.sin(S.time * 3.1)) * 0.84; ball.position.copy(v1);
+    me.local(-0.33, 0.34, v1); v1.y = BALL_R + 0.02 + Math.abs(Math.sin(S.time * 3.1)) * 0.8; ball.position.copy(v1);
+    v2.copy(v1); v2.y = Math.max(v2.y + BALL_R + 0.02, 0.74); me.reach('R', v2);
     marker.position.x = me.x; marker.position.z = me.z;
     for (const d of defenders) { poseDefend(d, S.time, false, 0); d.apply(dt); }
     updateExtras(dt);
@@ -542,7 +562,7 @@ function drawVision(dt) {
 }
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
-  tick(dt);
+  if (!dbgHold) tick(dt);
   renderer.render(scene, camera);
   drawVision(dt);
   requestAnimationFrame(frame);
@@ -550,4 +570,4 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // debug handle for testing from the console
-window.__arena = { S, me, B, D, unlocked, defenders, shootDown, shootUp, start, tick, playHighlight, enterGame, exitGame, render: () => { renderer.render(scene, camera); drawVision(1 / 60); } };
+window.__arena = { cam: (a) => { dbgCam = a; }, hold: (v) => { dbgHold = v; }, shadow, mates, S, me, B, D, unlocked, defenders, shootDown, shootUp, start, tick, playHighlight, enterGame, exitGame, render: () => { renderer.render(scene, camera); drawVision(1 / 60); } };
